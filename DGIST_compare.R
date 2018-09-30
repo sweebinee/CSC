@@ -227,16 +227,32 @@ dev.off()
 
 
 
-#Tcell
+#DGIST vs Xcell : gene exp / cell type 
+TGgene=c('ALDH1A2','ALOX15','CCL13','CCL17','CCL18','CCL23','CCL24','CD209','CD86','CLEC10A','F13A1','FCER2','IL3RA','SPINT2')
 
-TGgene='ENSG00000010610'
+for (i in TGgene){
+  print(ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id'])
+}
 
-pdf(paste0("DGIST_",ensemblGenes[TGgene,"external_gene_name"],".pdf"),width=12, height=9)
+
+exp =  DGIST@scale.data["ENSG00000128918",]
+
+#TGgene=CIBERSORT celltype marker gene 
+TGgene=c("ENSG00000161905","ENSG00000181374","ENSG00000102970","ENSG00000275385","ENSG00000274736","ENSG00000106178","ENSG00000090659","ENSG00000114013","ENSG00000132514","ENSG00000124491","ENSG00000104921","ENSG00000185291","ENSG00000167642")
+
+for (i in TGgene){
+  test = DGIST@scale.data[i,]
+  exp <- rbind(exp,test)
+}
+
+celltypes = "iDC"
+
+pdf(paste0("DGIST_Xcell_",celltypes,".pdf"),width=12, height=9)
 df = data.frame(x=DGIST@dr$tsne@cell.embeddings[, "tSNE_1"], 
                 y=DGIST@dr$tsne@cell.embeddings[, "tSNE_2"], 
-                expression=DGIST@scale.data[TGgene,])
+                expression=colSums(exp))
 ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) + 
-  ggtitle(paste0(ensemblGenes[TGgene,"external_gene_name"]), " expression") +
+  ggtitle(paste0(celltypes, " gene exp")) +
   geom_point(size=0.5) + 
   scale_colour_gradientn(colours = rev(brewer.pal(11, "RdBu"))) +
   ylab("Component 2") + 
