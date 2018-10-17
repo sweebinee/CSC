@@ -36,5 +36,25 @@ M_list&M2_list
 
 #그냥 숫자 입력하면 벤다이어그램 그려주는 웹서비스
 #http://eulerr.co/
+#
+cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function > PE17_cut.txt
+cut -f10 PE17_cut.txt | sed 's/:/\t/g' | cut -f5 > PE17_AF.txt
+paste PE17_cut.txt PE17_AF.txt > PE17_result.txt
+#
+#
+import os,re
+maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect2'
 
-cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function | head > PE17_cut.txt
+result = open("%s/%sPE17_result.txt"%(maindir,s),'r') 
+	result_lines = result.readlines()
+	filtered_result = open("%s/%s.txt"%(maindir,s),'w')
+	for i in result_lines:
+		CHR = i.split('\t')[3]
+		POS = i.split('\t')[4]
+		PASS = i.split('\t')[10]
+#		AF = i.split('\t')[13].split(':')[4]
+		if PASS == "PASS":
+			filtered_result.write("%s\t%s\n"%(CHR,POS))
+	result.close()
+	filtered_result.close()
+#
