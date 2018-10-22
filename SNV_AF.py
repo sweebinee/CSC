@@ -58,31 +58,142 @@ result.close()
 filtered_result.close()
 #
 ## PE_AF-BC_AF 하고 histogram 그리는 code in python
-import pandas as pandas
+import pandas as pd
 import matplotlib; matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 import os, re
 import numpy as np
-import seaborn as sb
 
 sample='PE32'
 AF_hist(sample)
 
 def AF_hist(sample):
-	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
-	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
-	result_lines = result.readlines()
-	AF_array = np.array([])
-	for i in result_lines:
-		BC_AF = float(i.split('\t')[8].split(':')[4])
-		PE_AF = float(i.split('\t')[9].split(':')[4])
-		dif = abs(float(PE_AF - BC_AF))
-		AF_array = np.append(AF_array,dif)
-	result.close()
+	AF_dif_array(sample)
 	file_name = '%s_AF_hist.png'%sample
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
 	save_file = os.path.join(maindir, file_name) 
 	fig = plt.figure() 
 	sb.distplot(AF_array, rug=True)
 	fig.savefig(save_file)
 
 #################################################
+def AF_dif_array(sample):
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+		result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+		result_lines = result.readlines()
+		AF_array = np.array([])
+		for i in result_lines:
+			BC_AF = float(i.split('\t')[8].split(':')[4])
+			PE_AF = float(i.split('\t')[9].split(':')[4])
+			dif = abs(float(PE_AF - BC_AF))
+			AF_array = np.append(AF_array,dif)
+		result.close()
+	return(AF_array)
+
+def PASS_dif_depth(sample):
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+	result_lines = result.readlines()
+	for i in result_lines:
+		PASS = i.split('\t')[6]
+		if PASS == "PASS":
+			BC_AF = float(i.split('\t')[8].split(':')[4])
+			PE_AF = float(i.split('\t')[9].split(':')[4])
+			dif = abs(float(PE_AF - BC_AF))
+			BC_depth = sum([int(j) for j in i.split('\t')[8].split(':')[1].split(',')[:]])
+			PE_depth = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
+			print "%f\t%i\t%i"%(dif,BC_depth,PE_depth)
+	result.close()
+	
+def grep_PASS(sample):
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+	result_lines = result.readlines()
+	snv_call = pd.DataFrame(columns=("Total", "Ref", "Alt", "AF"))
+	for i in result_lines:
+		PASS = i.split('\t')[6]
+		if PASS == "PASS":
+			CHR = i.split('\t')[1]
+			POS = i.split('\t')[2]
+			MUT = CHR+":"+POS
+			total = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
+			Ref = int(i.split('\t')[9].split(':')[1].split(',')[0])
+			Alt = int(i.split('\t')[9].split(':')[1].split(',')[1])
+			AF = float(i.split('\t')[9].split(':')[4])
+			snv_call.loc[MUT] = [total, Ref, Alt, AF]
+	return snv_call
+
+PE17 = set(grep_PASS('PE17').index)
+PE18 = set(grep_PASS('PE18').index)
+PE20 = set(grep_PASS('PE20').index)
+PE24 = set(grep_PASS('PE24').index)
+PE32 = set(grep_PASS('PE32').index)
+
+maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+file_name = 'PE2432_venn.png'
+save_file = os.path.join(maindir, file_name) 
+fig = plt.figure() 
+
+labels = get_labels([PE24,PE32], fill=['number'])
+fig, ax  = venn2(labels, names=['PE24', 'PE32'])
+
+labels = get_labels([PE20,PE24,PE32], fill=['number'])
+fig, ax  = venn3(labels, names=['PE20','PE24','PE32'])
+
+labels = get_labels([PE17,PE18,PE20,PE24,PE32], fill=['number'])
+fig, ax  = venn5(labels, names=['PE17', 'PE18', 'PE20', 'PE24', 'PE32'])
+
+fig.savefig(save_file)
+plt.close()
+
+
+
+def snv_summary(sample):
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+	result_lines = result.readlines()
+	snv_call = pd.DataFrame(columns=("Total", "Ref", "Alt", "AF"))
+	for i in result_lines:
+		CHR = i.split('\t')[1]
+		POS = i.split('\t')[2]
+		MUT = CHR+":"+POS
+		if MUT in union:
+			total = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
+			Ref = int(i.split('\t')[9].split(':')[1].split(',')[0])
+			Alt = int(i.split('\t')[9].split(':')[1].split(',')[1])
+			AF = float(i.split('\t')[9].split(':')[4])
+			snv_call.loc[MUT] = [total, Ref, Alt, AF]
+	return snv_call
+
+def grep_union():
+	PE17i = set(grep_PASS('PE17').index)
+	PE18i = set(grep_PASS('PE18').index)
+	PE20i = set(grep_PASS('PE20').index)
+	PE24i = set(grep_PASS('PE24').index)
+	PE32i = set(grep_PASS('PE32').index)
+	union = PE17i|PE18i|PE20i|PE24i|PE32i
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+	PE17 = snv_summary("PE17")
+	PE18 = snv_summary("PE18")
+	PE20 = snv_summary("PE20")
+	PE24 = snv_summary("PE24")
+	PE32 = snv_summary("PE32")
+	for i in union:
+		result = open("%s/union_%s.txt"%(maindir,i),'w')
+		result.write("Sample\tTotal\tRef\tAlt\tAF\n")
+		if i in PE17.index:
+			j = list(PE17.loc[i])
+			result.write("PE17\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
+		if i in PE18.index:
+			j = list(PE18.loc[i])
+			result.write("PE18\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
+		if i in PE20.index:
+			j = list(PE20.loc[i])
+			result.write("PE20\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
+		if i in PE24.index:
+			j = list(PE24.loc[i])
+			result.write("PE24\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
+		if i in PE32.index:
+			j = list(PE32.loc[i])
+			result.write("PE32\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
+		result.close()
