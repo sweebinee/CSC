@@ -37,7 +37,7 @@ M_list&M2_list
 #그냥 숫자 입력하면 벤다이어그램 그려주는 웹서비스
 #http://eulerr.co/
 #
-cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function > PE17_cut.txt
+cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function > PE17_cut.txt #M1 M2 공통
 cut -f10 PE17_cut.txt | sed 's/:/\t/g' | cut -f5 > PE17_AF.txt
 paste PE17_cut.txt PE17_AF.txt > PE17_result.txt
 #
@@ -105,7 +105,7 @@ def PASS_dif_depth(sample):
 			print "%f\t%i\t%i"%(dif,BC_depth,PE_depth)
 	result.close()
 	
-def grep_PASS(sample):
+def grep_PASSM1(sample):
 	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
 	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
 	result_lines = result.readlines()
@@ -123,19 +123,39 @@ def grep_PASS(sample):
 			snv_call.loc[MUT] = [total, Ref, Alt, AF]
 	return snv_call
 
-PE17 = set(grep_PASS('PE17').index)
+def grep_PASSM2(sample):
+	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect2'
+	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+	result_lines = result.readlines()
+	snv_call = pd.DataFrame(columns=("Total", "Ref", "Alt", "AF"))
+	for i in result_lines:
+		PASS = i.split('\t')[6]
+		if PASS == "PASS":
+			CHR = i.split('\t')[1]
+			POS = i.split('\t')[2]
+			MUT = CHR+":"+POS
+			total = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
+			Ref = int(i.split('\t')[9].split(':')[1].split(',')[0])
+			Alt = int(i.split('\t')[9].split(':')[1].split(',')[1])
+			AF = float(i.split('\t')[9].split(':')[2])
+			snv_call.loc[MUT] = [total, Ref, Alt, AF]
+	return snv_call
+
+M1 = set(grep_PASSM1('PE32').index)
+M2 = set(grep_PASSM2('PE32').index)
+
 PE18 = set(grep_PASS('PE18').index)
 PE20 = set(grep_PASS('PE20').index)
 PE24 = set(grep_PASS('PE24').index)
 PE32 = set(grep_PASS('PE32').index)
 
 maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
-file_name = 'PE2432_venn.png'
+file_name = 'PE32_M1M2.png'
 save_file = os.path.join(maindir, file_name) 
 fig = plt.figure() 
 
-labels = get_labels([PE24,PE32], fill=['number'])
-fig, ax  = venn2(labels, names=['PE24', 'PE32'])
+labels = get_labels([M1,M2], fill=['number'])
+fig, ax  = venn2(labels, names=['MuTect', 'MuTect2'])
 
 labels = get_labels([PE20,PE24,PE32], fill=['number'])
 fig, ax  = venn3(labels, names=['PE20','PE24','PE32'])
