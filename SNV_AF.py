@@ -79,15 +79,15 @@ def AF_hist(sample):
 #################################################
 def AF_dif_array(sample):
 	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
-		result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
-		result_lines = result.readlines()
-		AF_array = np.array([])
-		for i in result_lines:
-			BC_AF = float(i.split('\t')[8].split(':')[4])
-			PE_AF = float(i.split('\t')[9].split(':')[4])
-			dif = abs(float(PE_AF - BC_AF))
-			AF_array = np.append(AF_array,dif)
-		result.close()
+	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
+	result_lines = result.readlines()
+	AF_array = np.array([])
+	for i in result_lines:
+		BC_AF = float(i.split('\t')[8].split(':')[4])
+		PE_AF = float(i.split('\t')[9].split(':')[4])
+		dif = abs(float(PE_AF - BC_AF))
+		AF_array = np.append(AF_array,dif)
+	result.close()
 	return(AF_array)
 
 def PASS_dif_depth(sample):
@@ -115,7 +115,9 @@ def grep_PASSM1(sample):
 		if PASS == "PASS":
 			CHR = i.split('\t')[1]
 			POS = i.split('\t')[2]
-			MUT = CHR+":"+POS
+			ref = i.split('\t')[4]
+			alt = i.split('\t')[5]
+			MUT = CHR+":"+POS+":"+ref+":"+alt
 			total = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
 			Ref = int(i.split('\t')[9].split(':')[1].split(',')[0])
 			Alt = int(i.split('\t')[9].split(':')[1].split(',')[1])
@@ -133,7 +135,9 @@ def grep_PASSM2(sample):
 		if PASS == "PASS":
 			CHR = i.split('\t')[1]
 			POS = i.split('\t')[2]
-			MUT = CHR+":"+POS
+			ref = i.split('\t')[4]
+			alt = i.split('\t')[5]
+			MUT = CHR+":"+POS+":"+ref+":"+alt
 			total = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
 			Ref = int(i.split('\t')[9].split(':')[1].split(',')[0])
 			Alt = int(i.split('\t')[9].split(':')[1].split(',')[1])
@@ -154,7 +158,9 @@ def grep_PASSstrelka(sample):
 		if PASS == 'PASS':
 			CHR = i.split('\t')[0].replace('chr','')
 			POS = i.split('\t')[1]
-			mut = CHR + ':' + POS
+			ref = i.split('\t')[3]
+			alt = i.split('\t')[4]
+			mut = CHR + ':' + POS+":"+ref+":"+alt
 			snv.add(mut)
 	return snv
 
@@ -215,7 +221,7 @@ M2 = set(grep_PASSM2('PE32').index)
 S = grep_PASSstrelka('PE32')
 
 maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
-file_name = 'PE32_M1M2.png'
+file_name = 'M1M2ST_union_SNV_venn.png'
 save_file = os.path.join(maindir, file_name) 
 fig = plt.figure() 
 
@@ -225,11 +231,11 @@ fig, ax  = venn5(labels, names=['PE17', 'PE18', 'PE20', 'PE24', 'PE32'])
 fig.savefig(save_file)
 plt.close()
 
-sample='PE32'
+sample='PE17'
 M1 = set(grep_PASSM1(sample).index)
 M2 = set(grep_PASSM2(sample).index)
 S = grep_PASSstrelka(sample)
-PE32 = M1|M2|S
+PE17 = M1|M2|S
 
 ###################################################################################################
 ###################################################################################################
@@ -240,36 +246,63 @@ PE32 = M1|M2|S
 import pysam , sys 
 import os 
 
-sampleID=sys.argv[1] 
-snvinput=open("/storage/Project/GC/3/step05_mutation/GATK1/%s.snp.vcf"%sampleID,"r")
-snvoutput=open("/storage/Project/GC/3/step05_mutation/GATK1/%s.snp.vcf3M_table_table"%sampleID,"w")
-Exome="/storage/Project/GC/3/step04_recalibration/%s_recal.bam"%sampleID
-os.system("cp /storage/Project/GC/3/step04_recalibration/%s_recal.bai /storage/Project/GC/3/step04_recalibration/%s_recal.bam.bai"%(sampleID,sampleID))
-Exome_samfile=pysam.Samfile("%s"%Exome,"rb")
-#pysam.index(Exome)
-RNA="/storage/Project/GC/3/WTS/step06_conversion/%s_T2G_3M_sort.bam"%sampleID
-#pysam.index(RNA)
-RNA_samfile=pysam.Samfile("%s"%RNA,"rb")
-print "Start"
-
- 
 def Readcount(pos,sam):
  pos_cols=pos.split(":")
+ CHR = ''.join(['chr',pos_cols[0]])
  Ref=pos_cols[2] ;  Alt=pos_cols[3]
  Total_read_count = 0  ; Refcount=0; Altcount=0; mpileup_allele=[]
- for read in sam.pileup(pos_cols[0],int(pos_cols[1])-101,int(pos_cols[1])+101):
+ for read in sam.pileup(CHR,int(pos_cols[1])-101,int(pos_cols[1])+101):
   if read.pos == int(pos_cols[1])-1 :
    Total_read_count=read.n
    for mpileup in read.pileups:
-    if not mpileup.is_del : mpileup_allele.append(mpileup.alignment.seq[mpileup.qpos].upper())
+    if not mpileup.is_del : mpileup_allele.append(mpileup.alignment.seq[mpileup.query_position].upper())
    Refcount=mpileup_allele.count(Ref);Altcount=mpileup_allele.count(Alt)
- return [str(Total_read_count),str(Refcount), str(Altcount)]
+   global AF
+   AF = round(float(Altcount) / float(Total_read_count),2)
+ return [str(Total_read_count),str(Refcount), str(Altcount), str(AF)]
 
 
-for line in snvinput :
-    if line[0]=="#": continue
-    line_cols=line.replace("\n","").split("\t")
-    snvpos=":".join([line_cols[0],line_cols[1],line_cols[3],line_cols[4]])
-    newline_cols=line_cols+Readcount(snvpos,RNA_samfile)+Readcount(snvpos,Exome_samfile)
-    if int(newline_cols[12])>0: 
-        snvoutput.write("\t".join(newline_cols)); snvoutput.write("\n")
+sample='PE32'
+M1 = set(grep_PASSM1(sample).index)
+M2 = set(grep_PASSM2(sample).index)
+S = grep_PASSstrelka(sample)
+PE32 = M1|M2|S
+union = PE17|PE18|PE20|PE24|PE32 #1181
+
+sample_list=['PE17','PE18','PE20','PE24','PE32','BC24']
+for sample in sample_list:
+	main_dir="/storage2/Project/CSC/WES/03_SNV/MuTect"
+	input_dir='/storage2/Project/CSC/WES/02_Preprocessing'
+	snvoutput=open("%s/%s.M1M2ST_union_readcount_table"%(main_dir,sample),"w")
+	Exome="%s/%s_RECAL.bam"%(input_dir,sample)
+	Exome_samfile=pysam.Samfile("%s"%Exome,"rb")
+	#pysam.index(Exome)
+	print "Start", sample
+	for pos in union:
+		POS = pos.replace(':','\t').split("\t")
+		result = POS + Readcount(pos,Exome_samfile)
+		#if int(result[7])>0:
+		snvoutput.write("\t".join(result)); snvoutput.write("\n")
+	snvoutput.close()
+
+snv = '11:130911872:C:A'
+def AFtable(snv):
+	CHR = snv.split(":")[0]
+	POS = snv.split(":")[1]
+	Ref = snv.split(":")[2]
+	Alt = snv.split(":")[3]
+	main_dir="/storage2/Project/CSC/WES/03_SNV"
+	sample_list = ['BC24','PE17','PE18','PE20','PE24','PE32']
+	AFtable = open("%s/%s_AFtable"%(main_dir,snv),"w")
+	for sample in sample_list:
+		result = open("%s/%s.M1M2ST_union_readcount_table"%(main_dir,sample),"r")
+		for i in result.readlines():
+			s_CHR = i.split('\t')[0]
+			s_POS = i.split('\t')[1]
+			s_Ref = i.split('\t')[2]
+			s_Alt = i.split('\t')[3]
+			if (CHR==s_CHR) & (POS==s_POS) & (Ref==s_Ref) & (Alt==s_Alt):
+				print sample
+				AFtable.write("%s\t%s"%(sample,i))
+		result.close()
+	AFtable.close()
