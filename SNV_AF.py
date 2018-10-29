@@ -104,7 +104,7 @@ def PASS_dif_depth(sample):
 			PE_depth = sum([int(j) for j in i.split('\t')[9].split(':')[1].split(',')[:]])
 			print "%f\t%i\t%i"%(dif,BC_depth,PE_depth)
 	result.close()
-	
+
 def grep_PASSM1(sample):
 	maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
 	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
@@ -141,31 +141,22 @@ def grep_PASSM2(sample):
 			snv_call.loc[MUT] = [total, Ref, Alt, AF]
 	return snv_call
 
-M1 = set(grep_PASSM1('PE32').index)
-M2 = set(grep_PASSM2('PE32').index)
 
-PE18 = set(grep_PASS('PE18').index)
-PE20 = set(grep_PASS('PE20').index)
-PE24 = set(grep_PASS('PE24').index)
-PE32 = set(grep_PASS('PE32').index)
-
-maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
-file_name = 'PE32_M1M2.png'
-save_file = os.path.join(maindir, file_name) 
-fig = plt.figure() 
-
-labels = get_labels([M1,M2], fill=['number'])
-fig, ax  = venn2(labels, names=['MuTect', 'MuTect2'])
-
-labels = get_labels([PE20,PE24,PE32], fill=['number'])
-fig, ax  = venn3(labels, names=['PE20','PE24','PE32'])
-
-labels = get_labels([PE17,PE18,PE20,PE24,PE32], fill=['number'])
-fig, ax  = venn5(labels, names=['PE17', 'PE18', 'PE20', 'PE24', 'PE32'])
-
-fig.savefig(save_file)
-plt.close()
-
+def grep_PASSstrelka(sample):
+	main_dir = '/storage2/Project/CSC/WES/03_SNV/Strelka'
+	os.system('zcat %s/%s/results/variants/somatic.snvs.vcf.gz > %s/%s_snv.txt'%(main_dir,sample,main_dir,sample))
+	result = open('%s/%s_snv.txt'%(main_dir,sample),'r')
+	result_line = result.readlines()
+	snv = set()
+	for i in result_line:
+		if i[0] == "#": continue 
+		PASS = i.split('\t')[6]
+		if PASS == 'PASS':
+			CHR = i.split('\t')[0].replace('chr','')
+			POS = i.split('\t')[1]
+			mut = CHR + ':' + POS
+			snv.add(mut)
+	return snv
 
 
 def snv_summary(sample):
@@ -217,3 +208,68 @@ def grep_union():
 			j = list(PE32.loc[i])
 			result.write("PE32\t%s\t%s\t%s\t%s\n"%(j[0],j[1],j[2],j[3]))
 		result.close()
+
+
+M1 = set(grep_PASSM1('PE32').index)
+M2 = set(grep_PASSM2('PE32').index)
+S = grep_PASSstrelka('PE32')
+
+maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+file_name = 'PE32_M1M2.png'
+save_file = os.path.join(maindir, file_name) 
+fig = plt.figure() 
+
+labels = get_labels([PE17,PE18,PE20,PE24,PE32], fill=['number'])
+fig, ax  = venn5(labels, names=['PE17', 'PE18', 'PE20', 'PE24', 'PE32'])
+
+fig.savefig(save_file)
+plt.close()
+
+sample='PE32'
+M1 = set(grep_PASSM1(sample).index)
+M2 = set(grep_PASSM2(sample).index)
+S = grep_PASSstrelka(sample)
+PE32 = M1|M2|S
+
+###################################################################################################
+###################################################################################################
+##from sangok
+#/storage2/storage/Project/GC/GC/3/src/snv_support.py 
+# in rocks2
+
+import pysam , sys 
+import os 
+
+sampleID=sys.argv[1] 
+snvinput=open("/storage/Project/GC/3/step05_mutation/GATK1/%s.snp.vcf"%sampleID,"r")
+snvoutput=open("/storage/Project/GC/3/step05_mutation/GATK1/%s.snp.vcf3M_table_table"%sampleID,"w")
+Exome="/storage/Project/GC/3/step04_recalibration/%s_recal.bam"%sampleID
+os.system("cp /storage/Project/GC/3/step04_recalibration/%s_recal.bai /storage/Project/GC/3/step04_recalibration/%s_recal.bam.bai"%(sampleID,sampleID))
+Exome_samfile=pysam.Samfile("%s"%Exome,"rb")
+#pysam.index(Exome)
+RNA="/storage/Project/GC/3/WTS/step06_conversion/%s_T2G_3M_sort.bam"%sampleID
+#pysam.index(RNA)
+RNA_samfile=pysam.Samfile("%s"%RNA,"rb")
+print "Start"
+
+ 
+def Readcount(pos,sam):
+ pos_cols=pos.split(":")
+ Ref=pos_cols[2] ;  Alt=pos_cols[3]
+ Total_read_count = 0  ; Refcount=0; Altcount=0; mpileup_allele=[]
+ for read in sam.pileup(pos_cols[0],int(pos_cols[1])-101,int(pos_cols[1])+101):
+  if read.pos == int(pos_cols[1])-1 :
+   Total_read_count=read.n
+   for mpileup in read.pileups:
+    if not mpileup.is_del : mpileup_allele.append(mpileup.alignment.seq[mpileup.qpos].upper())
+   Refcount=mpileup_allele.count(Ref);Altcount=mpileup_allele.count(Alt)
+ return [str(Total_read_count),str(Refcount), str(Altcount)]
+
+
+for line in snvinput :
+    if line[0]=="#": continue
+    line_cols=line.replace("\n","").split("\t")
+    snvpos=":".join([line_cols[0],line_cols[1],line_cols[3],line_cols[4]])
+    newline_cols=line_cols+Readcount(snvpos,RNA_samfile)+Readcount(snvpos,Exome_samfile)
+    if int(newline_cols[12])>0: 
+        snvoutput.write("\t".join(newline_cols)); snvoutput.write("\n")
