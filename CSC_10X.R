@@ -205,7 +205,7 @@ rm(logcd)
 
 #setwd(data_path)
 #date = Sys.Date()
-#ensembl <- useMart(biomart = "ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl", host="www.ensembl.org")
+#ensembl <- useMart(biomart = "ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl", host="www.asia.ensembl.org")
 #ensemblGenes <- getBM(attributes=c('ensembl_gene_id', 'external_gene_name',  'chromosome_name', 'gene_biotype'), mart=ensembl)
 #rownames(ensemblGenes) <- ensemblGenes[,1]
 #mtGenes = ensemblGenes[ensemblGenes[,3]=="MT",]

@@ -339,15 +339,21 @@ def HC_TminusN():
 		tumor.close()
 		TN.close()
 
+PE17 = set([i for i in open("%s/PE17_TminusN"%main_dir,'r').readlines()])
+PE18 = set([i for i in open("%s/PE18_TminusN"%main_dir,'r').readlines()])
+PE20 = set([i for i in open("%s/PE20_TminusN"%main_dir,'r').readlines()])
+PE24 = set([i for i in open("%s/PE24_TminusN"%main_dir,'r').readlines()])
+PE32 = set([i for i in open("%s/PE32_TminusN"%main_dir,'r').readlines()])
+
 PE17 = set([':'.join([i.split('\t')[3],i.split('\t')[4],i.split('\t')[6],i.split('\t')[7]]) for i in open("%s/PE17_nsyn.txt"%(main_dir,),'r').readlines()])
 PE18 = set([':'.join([i.split('\t')[3],i.split('\t')[4],i.split('\t')[6],i.split('\t')[7]]) for i in open("%s/PE18_nsyn.txt"%(main_dir,),'r').readlines()])
 PE20 = set([':'.join([i.split('\t')[3],i.split('\t')[4],i.split('\t')[6],i.split('\t')[7]]) for i in open("%s/PE20_nsyn.txt"%(main_dir,),'r').readlines()])
 PE24 = set([':'.join([i.split('\t')[3],i.split('\t')[4],i.split('\t')[6],i.split('\t')[7]]) for i in open("%s/PE24_nsyn.txt"%(main_dir,),'r').readlines()])
 PE32 = set([':'.join([i.split('\t')[3],i.split('\t')[4],i.split('\t')[6],i.split('\t')[7]]) for i in open("%s/PE32_nsyn.txt"%(main_dir,),'r').readlines()])
 
-maindir = '/storage2/Project/CSC/WES/03_SNV/HaplotypeCaller'
+main_dir = '/storage2/Project/CSC/WES/03_SNV/HaplotypeCaller'
 file_name = 'SNV_venn.png'
-save_file = os.path.join(maindir, file_name) 
+save_file = os.path.join(main_dir, file_name) 
 fig = plt.figure() 
 
 labels = get_labels([PE17,PE18,PE20,PE24,PE32], fill=['number'])

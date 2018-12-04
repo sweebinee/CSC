@@ -19,12 +19,11 @@ dev.off()
 
 cell.num <- table(DGIST@ident)
 
-
 library(ggplot2)
-library(reshape)
+#library(reshape)
 library(plyr)
 library(scales)
-library(TDMR)
+#library(TDMR)
 
 setwd("/home/subin95/CSC/10X")
 df <- read.table("DGIST_cell.txt", sep="\t", header=TRUE)
@@ -138,6 +137,7 @@ library(RColorBrewer)
 library(Seurat)
 library(scater)
 library(dplyr)
+library(scran)
 
 DGIST=readRDS(file="BC_seurat.rds")
 
@@ -183,12 +183,14 @@ CIBERSORT$T.cells.regulatory..Tregs.    CIBERSORT$Eosinophils
 CIBERSORT$T.cells.gamma.delta           CIBERSORT$Neutrophils
 CIBERSORT$NK.cells.resting              
 
+
+celltype <- as.matrix(CIBERSORT$T.cells.CD8)
+rownames(celltype) <- rownames(CIBERSORT)
+
+CT_corr=c()
+
 #naiveB <- as.matrix(CIBERSORT$B.cells.naive)
 #rownames(naiveB) <- rownames(CIBERSORT)
-
-Neut <- as.matrix(CIBERSORT$Neutrophils)
-rownames(Neut) <- rownames(CIBERSORT)
-
 
 #naiveB_corr = c()
 #memoryB_corr = c()
@@ -236,85 +238,43 @@ dev.off()
 
 
 #DGIST vs Xcell : gene exp / cell type 
-TGgene=c('02-Sep','ABI2','ACBD3','ACTG1','ADAMTS12','ADD1','ADH1B','ADH5','AHSA1','ALCAM','ALDOA','AMZ2','ANAPC13','ANKFY1','ANXA1','ANXA5','ARCN1','ARF4','ARHGAP6','ARL1','ASAP2','ASCC3','ASPN','ATP5G1','ATP5J','ATP6V0E1','ATP6V1D','ATXN10','ATXN2','BAD','BAG2','BAG3','BUB3','BYSL','C11orf95','C12orf10','C14orf2','C19orf24','C2orf49','C6orf120','CACNA1C','CALR','CANX','CAPN2','CAPNS1','CCDC102B','CCDC53','CCDC90B','CCL8','CCNG1','CDIPT','CDK4','CDK7','CETN2','CISD1','CIZ1','CLEC3B','CNIH4','CNN2','COG7','COPA','COPB1','COPB2','COPS2','COPS7A','COX8A','CRYZL1','CSNK1G3','CSNK2A2','CTNNA1','CUEDC2','CUL7','CUTA','DALRD3','DCTN1','DCTN4','DDA1','DDB1','DDX47','DHX29','DKKL1','DNAJC13','DPT','DPY19L4','DYNC1LI2','DYNLRB1','ECT2','EDA2R','EEF1D','EID1','EIF3I','EIF4G2','EIF6','ELN','EMILIN1','EPN2','ERC1','ERCC1','ERGIC3','ERLIN1','EXOC1','EXOC7','FAF2','FAM160B2','FAM189B','FAM98A','FBXL12','FBXO21','FBXO22','FGF7','FKTN','FSHB','FTO','GANAB','GDF10','GDF5','GLT8D1','GMPR2','GOLGA3','GORASP2','GRSF1','GTF2H5','HADHA','HDLBP','HIC1','HLCS','HOXA3','HPD','HSP90AB1','HSP90B1','HSPA8','HSPB6','HSPB7','IFT46','IGF2BP3','INVS','IPO5','ISCU','ISLR','KDELR1','KDELR2','KIF3B','KLHL9','KRT19','KTN1','LAMP1','LAPTM4A','LGALS1','LMOD1','LRRC15','LTC4S','MANF','MAP3K7','MBTPS1','MBTPS2','MCTS1','MEA1','METTL5','MIF','MINPP1','MLH3','MMADHC','MORF4L2','MPZL1','MRPL15','MRPL17','MRPL40','MRPS11','MRPS33','MTMR2','MYCT1','MYL6','MYL6B','MYOF','MYOZ2','NBR1','NCKAP1','NDUFA8','NDUFB4','NDUFS4','NDUFS5','NETO2','NFATC4','NGRN','NOP10','OCRL','OGN','P4HB','PCDHGB5','PCDHGC3','PEX12','PEX2','PFN2','PGRMC1','PHKG1','PKNOX2','PLS3','POFUT2','POLR2F','POMP','PPP2R1A','PREPL','PRKAG1','PRKG1','PRRC1','PSMB1','PSMB4','PSMB5','PSMB7','PSMC5','PSMD10','PSMD14','PTGIR','PTP4A2','PTPN11','PTTG1IP','RARS','RBMS1','RER1','RFX2','RHOC','RIN2','RING1','RNF7','RPL10','RPL35A','RPL4','RPN2','RPS19','RWDD2B','S100A10','S100A6','S1PR2','SCAMP1','SCFD1','SCRG1','SDF2','SEC61B','SEC61G','SENP5','SGCD','SHFM1','SIX5','SLC35E1','SMAD5','SNTB2','SNUPN','SNX13','SOD1','SPAG16','SPAG7','SPATA7','SPATS2','SPEG','SPIN1','SRPRB','SSBP1','SSR1','ST13','STAM2','STX12','SVEP1','TBC1D17','TBL2','TCF21','TEX261','TFG','THAP10','TIMM17A','TM2D1','TMED1','TMED7','TMED9','TMEM165','TMEM184B','TMEM59','TMEM59L','TMEM87A','TNPO2','TOMM20','TPI1','TPM3','TRAPPC4','TRIM32','TSEN34','TTC37','TUBG2','TXNL1','UFC1','UFD1L','UFSP2','UQCRQ','USO1','VAMP3','VCL','VCP','VIM','VTI1B','WDFY3','YAP1','YIPF2','ZMPSTE24','ZMYM4','ZNF358','ZNF426','ZNF471','ZNF771','ZNHIT1')
-
+TGgene=c('COL14A1','COL13A1')
+TGgene_ensg = c()
 for (i in TGgene){
-  print(ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id'])
+  ensg<-ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id']
+  if(length(ensg) >= 1){
+    for (j in 1:length(ensg)){
+      tryCatch(expr=DGIST@scale.data[ensg,],
+        error=function(e) print(i),
+        finally = ensg<-ensg[j])
+    }
+  }
+  TGgene_ensg<-list.append(TGgene_ensg,ensg)
 }
+TGgene_ensg<-na.omit(TGgene_ensg)
 
-
-exp =  DGIST@scale.data["ENSG00000138443",]
+exp =  DGIST@scale.data["ENSG00000174600",]
 
 #TGgene=CIBERSORT celltype marker gene 
-TGgene=c("ENSG00000182827","ENSG00000184009","ENSG00000151388","ENSG00000087274","ENSG00000196616","ENSG00000197894",
-  "ENSG00000100591","ENSG00000170017","ENSG00000149925","ENSG00000196704","ENSG00000129055","ENSG00000185722",
-  "ENSG00000135046","ENSG00000164111","ENSG00000095139","ENSG00000168374","ENSG00000047648","ENSG00000120805",
-  "ENSG00000151693","ENSG00000112249","ENSG00000106819","ENSG00000159199","ENSG00000154723","ENSG00000113732",
-  "ENSG00000100554","ENSG00000130638","ENSG00000204842","ENSG00000002330","ENSG00000112208","ENSG00000151929",
-  "ENSG00000154473","ENSG00000112578","ENSG00000188070","ENSG00000139637","ENSG00000156411","ENSG00000228300",
-  "ENSG00000135974","ENSG00000185127","ENSG00000151067","ENSG00000179218","ENSG00000127022","ENSG00000162909",
-  "ENSG00000126247","ENSG00000150636","ENSG00000137500","ENSG00000108700","ENSG00000113328","ENSG00000103502",
-  "ENSG00000135446","ENSG00000134058","ENSG00000147400","ENSG00000122873","ENSG00000148337","ENSG00000163815",
-  "ENSG00000143771","ENSG00000064666","ENSG00000168434","ENSG00000122218","ENSG00000129083","ENSG00000184432",
-  "ENSG00000166200","ENSG00000111652","ENSG00000176340","ENSG00000205758","ENSG00000151292","ENSG00000070770",
-  "ENSG00000044115","ENSG00000107874","ENSG00000044090","ENSG00000112514","ENSG00000178149","ENSG00000204843",
-  "ENSG00000132912","ENSG00000130311","ENSG00000167986","ENSG00000213782","ENSG00000067248","ENSG00000104901",
-  "ENSG00000138246","ENSG00000143196","ENSG00000156162","ENSG00000135720","ENSG00000125971","ENSG00000114346",
-  "ENSG00000131080","ENSG00000104529","ENSG00000255302","ENSG00000084623","ENSG00000110321","ENSG00000242372",
-  "ENSG00000049540","ENSG00000138080","ENSG00000072134","ENSG00000082805","ENSG00000012061","ENSG00000125991",
-  "ENSG00000107566","ENSG00000090989","ENSG00000182473","ENSG00000113194","ENSG00000158863","ENSG00000160767",
-  "ENSG00000119812","ENSG00000127452","ENSG00000135108","ENSG00000167196","ENSG00000140285","ENSG00000106692",
-  "ENSG00000131808","ENSG00000140718","ENSG00000089597","ENSG00000266524","ENSG00000125965","ENSG00000016864",
-  "ENSG00000100938","ENSG00000090615","ENSG00000115806","ENSG00000132463","ENSG00000272047","ENSG00000084754",
-  "ENSG00000115677","ENSG00000177374","ENSG00000159267","ENSG00000105997","ENSG00000158104","ENSG00000096384",
-  "ENSG00000166598","ENSG00000109971","ENSG00000004776","ENSG00000173641","ENSG00000118096","ENSG00000136231",
-  "ENSG00000119509","ENSG00000065150","ENSG00000136003","ENSG00000129009","ENSG00000105438","ENSG00000136240",
-  "ENSG00000101350","ENSG00000198642","ENSG00000171345","ENSG00000126777","ENSG00000185896","ENSG00000068697",
-  "ENSG00000100097","ENSG00000163431","ENSG00000172061","ENSG00000213316","ENSG00000145050","ENSG00000135341",
-  "ENSG00000140943","ENSG00000012174","ENSG00000232119","ENSG00000124733","ENSG00000138382","ENSG00000240972",
-  "ENSG00000107789","ENSG00000119684","ENSG00000168288","ENSG00000123562","ENSG00000197965","ENSG00000137547",
-  "ENSG00000158042","ENSG00000185608","ENSG00000181991","ENSG00000090263","ENSG00000087053","ENSG00000120279",
-  "ENSG00000092841","ENSG00000196465","ENSG00000138119","ENSG00000172399","ENSG00000188554","ENSG00000061676",
-  "ENSG00000119421","ENSG00000065518","ENSG00000164258","ENSG00000168653","ENSG00000171208","ENSG00000100968",
-  "ENSG00000182768","ENSG00000182117","ENSG00000122126","ENSG00000106809","ENSG00000185624","ENSG00000276547",
-  "ENSG00000240184","ENSG00000108733","ENSG00000164751","ENSG00000070087","ENSG00000101856","ENSG00000164776",
-  "ENSG00000165495","ENSG00000102024","ENSG00000186866","ENSG00000100142","ENSG00000132963","ENSG00000105568",
-  "ENSG00000138078","ENSG00000181929","ENSG00000185532","ENSG00000164244","ENSG00000008018","ENSG00000159377",
-  "ENSG00000100804","ENSG00000136930","ENSG00000087191","ENSG00000101843","ENSG00000115233","ENSG00000160013",
-  "ENSG00000184007","ENSG00000179295","ENSG00000183255","ENSG00000113643","ENSG00000153250","ENSG00000157916",
-  "ENSG00000087903","ENSG00000155366","ENSG00000132669","ENSG00000204227","ENSG00000114125","ENSG00000147403",
-  "ENSG00000182899","ENSG00000174444","ENSG00000118705","ENSG00000105372","ENSG00000156253","ENSG00000197747",
-  "ENSG00000197956","ENSG00000267534","ENSG00000085365","ENSG00000092108","ENSG00000164106","ENSG00000132581",
-  "ENSG00000106803","ENSG00000132432","ENSG00000119231","ENSG00000170624","ENSG00000177045","ENSG00000127526",
-  "ENSG00000113658","ENSG00000168807","ENSG00000169371","ENSG00000071189","ENSG00000142168","ENSG00000144451",
-  "ENSG00000091640","ENSG00000042317","ENSG00000123352","ENSG00000072195","ENSG00000106723","ENSG00000144867",
-  "ENSG00000106028","ENSG00000124783","ENSG00000100380","ENSG00000115145","ENSG00000117758","ENSG00000165124",
-  "ENSG00000104946","ENSG00000106638","ENSG00000118526","ENSG00000144043","ENSG00000114354","ENSG00000129028",
-  "ENSG00000134375","ENSG00000162604","ENSG00000099203","ENSG00000134970","ENSG00000184840","ENSG00000134851",
-  "ENSG00000198792","ENSG00000116209","ENSG00000105696","ENSG00000103978","ENSG00000105576","ENSG00000173726",
-  "ENSG00000111669","ENSG00000143549","ENSG00000196655","ENSG00000119401","ENSG00000170892","ENSG00000198677",
-  "ENSG00000037042","ENSG00000091164","ENSG00000143222","ENSG00000109775","ENSG00000164405","ENSG00000138768",
-  "ENSG00000049245","ENSG00000035403","ENSG00000165280","ENSG00000026025","ENSG00000100568","ENSG00000163625",
-  "ENSG00000137693","ENSG00000130733","ENSG00000084073","ENSG00000146463","ENSG00000198816","ENSG00000130818",
-  "ENSG00000196263","ENSG00000179965","ENSG00000106400")
 
-
-
-for (i in TGgene){
+for (i in TGgene_ensg){
   test = DGIST@scale.data[i,]
   exp <- rbind(exp,test)
 }
+exp <- exp[-1,]
 
-celltypes = "Smooth muscle"
+celltypes = "FIBROBLAST"
 
-pdf(paste0("DGIST_Xcell_",celltypes,".pdf"),width=12, height=9)
+cols <- c('#D5D8DC',brewer.pal(9, "Reds"))
+
+pdf(paste0("test_",celltypes,".pdf"),width=12, height=9)
 df = data.frame(x=DGIST@dr$tsne@cell.embeddings[, "tSNE_1"], 
                 y=DGIST@dr$tsne@cell.embeddings[, "tSNE_2"], 
                 expression=colSums(exp))
 ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) + 
   ggtitle(paste0(celltypes, " gene exp")) +
   geom_point(size=0.5) + 
-  scale_colour_gradientn(colours = rev(brewer.pal(11, "RdBu"))) +
+  scale_colour_gradientn(colours = cols) +
   ylab("Component 2") + 
   xlab("Component 1") + 
   theme_bw() +
@@ -327,8 +287,10 @@ ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) +
         legend.title=element_blank(),
         legend.key=element_blank(),
         axis.text.x = element_text(size=20)
-  ) 
+  ) + ggtitle(celltypes)
 dev.off()
+
+
 
 #####################################################
 #####################################################
@@ -336,10 +298,406 @@ immune cell pop 따로
 #####################################################
 setwd('/storage2/Project/CSC/10X/DGIST_data')
 DGIST=readRDS(file="BC_seurat.rds")
+> DGIST
+An object of class seurat in project SeuratProject 
+ 58233 genes across 55788 samples.
 
-data_to_write_out <- as.data.frame(as.matrix(DGIST@scale.data))
+T.subset <- SubsetData(object = DGIST, ident.use = c('0','1','3','4','5','14'))
+#> T.subset
+#An object of class seurat in project SeuratProject 
+# 58233 genes across 30498 samples.
+#saveRDS(Tsub_seurat, "Tcell_subclusters.rds")
+Tsub_seurat=readRDS(file="Tcell_subclusters.rds")
 
-fwrite(x = data_to_write_out, row.names = TRUE, file = "outfile.csv")
+Mono.subset <- SubsetData(object = DGIST, ident.use = c('2','6','7','12','16','17','18'))
+#> Mono.subset
+#An object of class seurat in project SeuratProject 
+# 58233 genes across 16073 samples
 
-write.csv(BC_seurat.markers.genesymbol, file="PE26_BC_5000_seurat.markers.genesymbol.csv")
+PCA = 50
+Monosub_seurat <- RunPCA(Mono.subset, pcs.compute = PCA, weight.by.var = FALSE)
+Monosub_seurat <- RunTSNE(Monosub_seurat, dims.use = 1:PCA, do.fast = T, seed.use = 42, perplexity=20)
+Monosub_seurat <- FindClusters(Monosub_seurat, reduction.type="pca", dims.use = 1:PCA, save.SNN = TRUE, force.recalc = TRUE)
 
+saveRDS(Monosub_seurat, "Monocyte_subclusters.rds")
+Monosub_seurat=readRDS(file="Monocyte_subclusters.rds")
+
+pdf("Tcell_subcluster_pca.pdf")
+PCAPlot(Tsub_seurat)
+dev.off()
+
+pdf("Tcell_subcluster_tsne.pdf",width=12, height=9)
+TSNEPlot(Tsub_seurat, label.size = 7, do.label = TRUE, cex=5)
+dev.off()
+
+load("ensemblGenes2018-11-16.RData")
+
+target = 'CD114'
+TGgene=ensemblGenes[ensemblGenes$external_gene_name == target,'ensembl_gene_id']
+#CD45
+TGgene = 'ENSG00000081237'
+
+cols <- c('#D5D8DC',brewer.pal(9, "Reds"))
+pdf(paste0("Monocyte_subcluster_",target,"_seurat.pdf"),width=12, height=9)
+df = data.frame(x=Monosub_seurat@dr$tsne@cell.embeddings[, "tSNE_1"], 
+                y=Monosub_seurat@dr$tsne@cell.embeddings[, "tSNE_2"], 
+                expression=Monosub_seurat@scale.data[TGgene,])
+ggplot(df,aes(x=x, y=y, colour=expression)) + 
+  geom_point(size=1) + 
+  scale_colour_gradientn(colours = cols ) +
+  ylab("Component 2") + 
+  xlab("Component 1") + 
+  theme_bw() +
+  theme(text = element_text(size=20),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(), 
+        axis.line=element_line(size=1),
+        axis.ticks=element_line(size=1),
+        legend.text=element_text(size=20), 
+        legend.title=element_blank(),
+        legend.key=element_blank(),
+        axis.text.x = element_text(size=20)
+  )+ ggtitle(paste0("Monocyte_subcluster : ",target))
+dev.off()
+
+##trajectory analysis w/ MONOCLE in R 3.5
+#source("http://bioconductor.org/biocLite.R")
+#biocLite()
+#biocLite("monocle") # install monocle
+#devtools::install_github("cole-trapnell-lab/DDRTree", ref="simple-ppt-like") #Install DDRTree
+#devtools::install_github("cole-trapnell-lab/L1-graph") #Install the latest version of L1-graph
+#install.packages("reticulate") #Install several python packages Monocle 3 depends on
+#library(reticulate)
+#py_install('umap-learn', pip = T, pip_ignore_installed = T) # Ensure the latest version of UMAP is installed
+#py_install("louvain") 
+##pull the monocle3_alpha branch of the Monocle GitHub repo
+#devtools::install_github("cole-trapnell-lab/monocle-release", ref="monocle3_alpha") 
+
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#    install.packages("BiocManager")
+#BiocManager::install("monocle", version = "3.8")
+
+library(monocle)
+#https://davetang.org/muse/2017/10/01/getting-started-monocle/
+
+T_sb = importCDS(Tsub_seurat)
+T_sb <- estimateSizeFactors(T_sb)
+T_sb <- estimateDispersions(T_sb)
+#Removing 66 outliers
+
+#detectGenes() : tallies the number of cells expressing a gene and the number of genes expressed among all cells
+T_sb <- detectGenes(T_sb, min_expr = 0.1)
+#head(fData(T_sb))
+#summary(fData(T_sb)$num_cells_expressed)
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#    0.0     0.0     1.0   641.7    77.0 30498.0 
+
+#I will use only subsets(Tcell | Monocytes | Tumor) & genes that are expressed in at least 10 cells
+expressed_genes <- row.names(subset(fData(T_sb), num_cells_expressed >= 10))
+#We’ll use the recommended approach of "ordering based on genes" that differ between clusters.
+#First, we’ll perform another subset of genes, keeping only genes expressed in greater than 5% of cells.
+fData(T_sb)$use_for_ordering <- fData(T_sb)$num_cells_expressed > 0.05 * ncol(T_sb)
+#table(fData(T_sb)$use_for_ordering)
+#FALSE  TRUE 
+#52789  5444
+
+#we will use thresholds on the cell’s local density (rho) and nearest distance (delta) to determine the number of clusters.
+T_sb <- reduceDimension(T_sb, max_components = 2, norm_method = 'log', reduction_method = 'tSNE', verbose = TRUE)
+T_sb <- clusterCells(T_sb, verbose = FALSE)
+#Distance cutoff calculated to 3.542273 
+
+pdf("MONOCLE_Tcell_subcluster_rho_delta.pdf")
+plot_rho_delta(T_sb)
+dev.off()
+#rho = , delta = 
+
+T_sb <- clusterCells(T_sb, rho_threshold = 2, delta_threshold = 10, skip_rho_sigma = T, verbose = FALSE)
+#table(pData(T_sb)$Cluster)
+#   1    2    3    4    5    6    7    8    9 
+#4697 3513 4194 2420 1548 1934 5636 2920 3636 
+
+pdf("MONOCLE_Tcell_subcluster_cluser01.pdf")
+plot_cell_clusters(T_sb)
+dev.off()
+
+#perform the differential gene expression analysis as before but across all cell clusters.
+clustering_DEG_genes <- differentialGeneTest(T_sb, fullModelFormulaStr = '~Cluster', cores = 8) #TAKES TOO LONG!!!!!!!!!!
+#dim(clustering_DEG_genes)
+
+#We’ll use the top 1,000 most significantly differentially expressed genes as the set of ordering genes and perform the dimension reduction and the trajectory analysis (using the orderCells() function).
+my_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000]
+T_sb <- setOrderingFilter(T_sb, ordering_genes = my_ordering_genes)
+T_sb <- reduceDimension(T_sb, method = 'DDRTree')
+
+# the warnings were for use of deprecated code
+T_sb <- orderCells(T_sb) #TAKES TOO LONG!!!!!!!!!!
+
+pdf("MONOCLE_Tcell_subcluster_trajectory.pdf",width=10, height=10)
+plot_cell_trajectory(T_sb, color_by = "Cluster")
+dev.off()
+
+pdf("MONOCLE_Tcell_subcluster_trajectory_tsne.pdf",width=10, height=10)
+plot_cell_clusters(T_sb)
+dev.off()
+
+TGgene=c('COL14A1')
+TGgene_ensg = c()
+for (i in TGgene){
+  ensg<-ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id']
+  if(length(ensg) >= 1){
+    for (j in 1:length(ensg)){
+      tryCatch(expr=T_sb@scale.data[ensg,],
+        error=function(e) print(i),
+        finally = ensg<-ensg[j])
+    }
+  }
+  TGgene_ensg<-list.append(TGgene_ensg,ensg)
+}
+TGgene_ensg<-na.omit(TGgene_ensg)
+
+exp =  T_sb@scale.data["ENSG00000174600",]
+
+for (i in TGgene_ensg){
+  test = T_sb@scale.data[i,]
+  exp <- rbind(exp,test)
+}
+exp <- exp[-1,]
+
+celltypes = "CD8T"
+
+cols <- c('#D5D8DC',brewer.pal(9, "Reds"))
+
+pdf(paste0("Tcell_subcluster_",celltypes,"_tsne_.pdf"),width=12, height=9)
+df = data.frame(x=T_sb@dr$tsne@cell.embeddings[, "tSNE_1"], 
+                y=T_sb@dr$tsne@cell.embeddings[, "tSNE_2"], 
+                expression=colSums(exp))
+ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) + 
+  ggtitle(paste0(celltypes, " gene exp")) +
+  geom_point(size=0.5) + 
+  scale_colour_gradientn(colours = cols) +
+  ylab("Component 2") + 
+  xlab("Component 1") + 
+  theme_bw() +
+  theme(text = element_text(size=20),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(), 
+        axis.line=element_line(size=1),
+        axis.ticks=element_line(size=1),
+        legend.text=element_text(size=20), 
+        legend.title=element_blank(),
+        legend.key=element_blank(),
+        axis.text.x = element_text(size=20)
+  ) + ggtitle(celltypes)
+dev.off()
+
+#saveRDS(T_sb, "Monocle_Tcell_subclusters.rds")
+
+##Finding Genes that Change as a Function of Pseudotime
+T_sb=readRDS(file="Monocle_Tcell_subclusters.rds")
+
+head(pData(T_sb))
+#to find genes that have an expression pattern that varies according to pseudotime
+my_pseudotime_de <- differentialGeneTest(T_sb, fullModelFormulaStr = "~sm.ns(Pseudotime)", cores = 8)
+#saveRDS(my_pseudotime_de,"Monocle_Tcell_subclusters_pseudotime_de.rds")
+my_pseudotime_de["id"] <- my_pseudotime_de$gene_short_name
+my_pseudotime_de$gene_short_name <- as.character(my_pseudotime_de$gene_short_name)
+for (i in 1:nrow(my_pseudotime_de)){
+  gene_name = ensemblGenes[ensemblGenes$ensembl_gene_id==rownames(my_pseudotime_de)[i],'external_gene_name']
+  if (length(gene_name) == 0) { next }
+  my_pseudotime_de[i,'gene_short_name'] <- gene_name
+}
+
+# save the top 6 genes
+my_pseudotime_de %>% arrange(qval) %>% head() %>% select(id) -> my_pseudotime_gene
+my_pseudotime_gene <- my_pseudotime_gene$id
+pseudo_Tsb <- T_sb[c('ENSG00000187608','ENSG00000074800','ENSG00000020633','ENSG00000117632','ENSG00000142669','ENSG00000169442'),]
+
+png("MONOCLE_Tcell_subcluster_plot_genes_in_pseudotime.png")
+plot_genes_in_pseudotime(pseudo_Tsb,label_by_short_name=TRUE)
+dev.off()
+
+#####################################
+#####################################
+
+
+
+#####################################
+#tumor cell cluster is patients specific?
+
+PT.subset <- SubsetData(object = DGIST, ident.use = c('10','13','15','19','20','21'))
+
+PCA = 50
+PTsub_seurat <- RunPCA(PT.subset, pcs.compute = PCA, weight.by.var = FALSE)
+PTsub_seurat <- RunTSNE(PTsub_seurat, dims.use = 1:PCA, do.fast = T, seed.use = 42, perplexity=20)
+PTsub_seurat <- FindClusters(PTsub_seurat, reduction.type="pca", dims.use = 1:PCA, save.SNN = TRUE, force.recalc = TRUE)
+
+saveRDS(PTsub_seurat, "PutativeTumorcell_subclusters.rds")
+PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
+
+pdf("Tumorcell_pca.pdf")
+PCAPlot(PTsub_seurat)
+dev.off()
+
+pdf("Tumorcell_tsne.pdf")
+TSNEPlot(PTsub_seurat, label.size = 4, do.label = TRUE, cex=5)
+dev.off()
+
+pdf("Tumorcell_tsne_bysample.pdf")
+TSNEPlot(object = PTsub_seurat,group.by = "orig.ident")
+dev.off()
+
+my_color_palette = c('#E74C3C','#E67E22','#F1C40F','#2ECC71','#3498DB','#8E44AD')
+# Plot the tSNE plot with the default ggplot2 colors
+pdf("Tumorcell_tsne_bysample.pdf")
+TSNEPlot(object = PTsub_seurat,group.by = "orig.ident", do.return = T) + 
+  scale_color_manual(values = my_color_palette)
+dev.off()
+
+##patient specific cluster 
+TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4','6','11'))
+# 58233 genes across 2504 samples.
+
+#####################################
+#ssGSEA
+## singlecellTK로 gsva
+library(singleCellTK)
+#library(clusterProfiler)
+
+PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
+TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4','6','11'))
+TTumor_sample<-sample(colnames(TTumor.subset@data),1000)
+TTumor_sample.subset <- SubsetData(object = TTumor.subset, cells.use = TTumor_sample)
+
+sce<-as.SingleCellExperiment(TTumor_sample.subset)
+
+# ensg to entrz
+#https://bioconductor.org/packages/devel/bioc/vignettes/clusterProfiler/inst/doc/clusterProfiler.html#bitr-biological-id-translator
+#ensgTOentz = bitr(rownames(counts_mat), fromType="ENSEMBL", toType=c("SYMBOL","ENTREZID"), OrgDb="org.Hs.eg.db")
+ensgTOentz = readRDS("TTumor_gsva_ensgTOent.rds")
+ensgTOsym = readRDS("TTumor_gsva_ensgTOsym.rds")
+
+counts_mat <- assay(sce, "counts")
+> dim(counts_mat)
+[1] 58233  2504
+
+for (i in 1:nrow(counts_mat)){
+  gene_name = ensgTOentz[ensgTOentz$ENSEMBL==rownames(counts_mat)[i],'ENTREZID']
+  if (length(gene_name) == 0) { next }
+  rownames(counts_mat)[i]  <- gene_name
+}
+etz_counts_mat<-counts_mat[-(grep("ENSG", rownames(counts_mat))),]
+> dim(etz_counts_mat)
+[1] 25843  2504
+
+sample_annot <- colData(sce)
+row_annot <- DataFrame(rownames(etz_counts_mat))
+
+newSCE <- createSCE(assayFile = etz_counts_mat, annotFile = sample_annot, 
+                    featureFile = row_annot, assayName = "counts",
+                    inputDataFrames = TRUE, createLogCounts = TRUE)
+#saveRDS(newSCE, "sce_TTumor.subset.rds")
+
+TT_es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c2 (Human, Entrez ID only)", 
+  c("REACTOME_SIGNALING_BY_EGFR_IN_CANCER","KEGG_PATHWAYS_IN_CANCER",
+    "NAKAMURA_CANCER_MICROENVIRONMENT_UP","NAKAMURA_CANCER_MICROENVIRONMENT_DN",
+    "BERTUCCI_MEDULLARY_VS_DUCTAL_BREAST_CANCER_UP","BERTUCCI_MEDULLARY_VS_DUCTAL_BREAST_CANCER_DN",
+    "SCHUETZ_BREAST_CANCER_DUCTAL_INVASIVE_UP","SCHUETZ_BREAST_CANCER_DUCTAL_INVASIVE_DN",
+    "SOTIRIOU_BREAST_CANCER_GRADE_1_VS_3_UP","SOTIRIOU_BREAST_CANCER_GRADE_1_VS_3_DN",
+    "CHARAFE_BREAST_CANCER_LUMINAL_VS_BASAL_UP","CHARAFE_BREAST_CANCER_LUMINAL_VS_BASAL_DN",
+    "CHARAFE_BREAST_CANCER_LUMINAL_VS_MESENCHYMAL_UP","CHARAFE_BREAST_CANCER_LUMINAL_VS_MESENCHYMAL_DN",
+    "CHARAFE_BREAST_CANCER_BASAL_VS_MESENCHYMAL_UP","CHARAFE_BREAST_CANCER_BASAL_VS_MESENCHYMAL_DN",
+    "DOANE_BREAST_CANCER_CLASSES_UP","DOANE_BREAST_CANCER_CLASSES_DN",
+    "DOANE_BREAST_CANCER_ESR1_UP","DOANE_BREAST_CANCER_ESR1_DN",
+    "GINESTIER_BREAST_CANCER_ZNF217_AMPLIFIED_UP","GINESTIER_BREAST_CANCER_ZNF217_AMPLIFIED_DN",
+    "GINESTIER_BREAST_CANCER_20Q13_AMPLIFICATION_UP","GINESTIER_BREAST_CANCER_20Q13_AMPLIFICATION_DN"
+    ), 
+  method = "ssgsea",min.sz=1, max.sz=9999, verbose=TRUE, abs.ranking=FALSE)
+
+png("ssgsea_TTumor.png")
+gsvaPlot(newSCE, TT_es, "Heatmap", condition = FALSE,
+  show_column_names = FALSE, show_row_names = TRUE, text_size = 12)
+dev.off()
+
+##fibroblast vs TTumor
+###fibroblast subset 구해보자
+Fibro.subset <- SubsetData(object = DGIST, ident.use = c('6','2')) # 58233 x 9866
+#random_sampling
+Fib_sample<-sample(colnames(Fibro.subset@data),1000)
+Fib_sample.subset <- SubsetData(object = DGIST, cells.use = Fib_sample)
+Fibro<-as.SingleCellExperiment(Fib_sample.subset)
+
+counts_mat <- assay(sce, "counts")
+
+
+
+
+
+#####################################
+###infered CNV compare with WES's EXCAVATOR results
+BiocManager::install('NGCHM')
+library(infercnv)
+
+countFiltered = DGIST@data[Matrix::rowSums(DGIST@data) > 0, ]
+DGIST.df<-as.data.frame(as.matrix(countFiltered)) #log scale The normalized expression matrix (log-scale)
+write.table(DGIST.df, file = "DGIST.counts.matrix", sep="\t", row.names=TRUE)
+#sed 's/"//g' TTsub.counts.matrix > TTsub.counts.mtx
+
+annot <- data.frame(colnames(DGIST.df))
+annot$colnames.DGIST.df. <- as.character(annot$colnames.DGIST.df.)
+for (i in 1:nrow(annot)){
+  celltypes = DGIST@data
+  annot[i,'celltypes'] <- celltypes
+}
+
+malig_cell <- as.set(colnames(TTumor.subset@data))
+for (i in 1:nrow(annot)){
+  if (annot$colnames.DGIST.df.[i] %e% malig_cell){
+  celltypes = paste0("malignant_",strsplit(annot$colnames.DGIST.df.[i],split="_")[[1]][2])
+  }
+  else{
+    celltypes = 'normal'
+  }
+  annot[i,'celltypes'] <- celltypes
+}
+write.table(annot, file = "DGIST.cellAnnotations.txt", sep="\t", row.names=FALSE, col.names=FALSE)
+#sed 's/"//g' TTsub.cellAnnotations.txt > TTsub.cellAnnotations
+
+## By Default use gene_id as the name of your feature
+python /storage2/Project/CSC/10X/06_inferCNV/gtf_to_position_file.py /storage2/Project/source/ref_GRCh38/Homo_sapiens.GRCh38.94.gtf /storage2/Project/CSC/10X/06_inferCNV/GRCh38.94_gen_pos.txt
+#Number of lines read: 2737559
+#Number of comments: 5
+#Number of entries: 58735
+#Number of duplicate entries: 2678824
+#Number of entries written: 58735
+
+# create the infercnv object
+infercnv_obj = CreateInfercnvObject(raw_counts_matrix="DGIST.counts.matrix",
+                                    annotations_file="PE24.cellAnnotations.txt",
+                                    delim="\t",
+                                    gene_order_file="/storage2/Project/CSC/10X/06_inferCNV/GRCh38.94_gen_pos.txt",
+                                    ref_group_names="normal"
+                                    )
+
+# perform infercnv operations to reveal cnv signal
+infercnv_obj = infercnv::run(infercnv_obj,
+                             cutoff=0.1,  # use 1 for smart-seq, 0.1 for 10x-genomics
+                             out_dir="DGIST_infercnv_PE24",  # dir is auto-created for storing outputs
+                             cluster_by_groups=T,   # cluster
+                             include.spike=T
+                             )
+
+saveRDS(infercnv_obj, "infercnv_obj_DGIST_ref_normal_malig_PE24.rds")
+infercnv_obj=readRDS(file="infercnv_obj_DGIST_ref_normal_malig_PE24.rds")
+
+
+install.packages("devtools")
+library(devtools)
+devtools::install_github("bmbroom/tsvio")
+devtools::install_github("bmbroom/NGCHMR", ref="stable")
+library(NGCHM)
+
+ngchm(infercnv_obj          = infercnv_obj,
+       out_dir              = "/storage2/Project/CSC/10X/DGIST_data/DGIST_infercnv_PE24",
+       path_to_shaidyMapGen = "/storage2/Project/source/ShaidyMapGen.jar",
+       gene_symbol          = bio.go.id 
+)
