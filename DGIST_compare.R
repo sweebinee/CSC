@@ -563,22 +563,33 @@ TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4'
 library(singleCellTK)
 #library(clusterProfiler)
 
-PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
-TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4','6','11'))
+#PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
+#TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4','6','11'))
 TTumor_sample<-sample(colnames(TTumor.subset@data),1000)
 TTumor_sample.subset <- SubsetData(object = TTumor.subset, cells.use = TTumor_sample)
 
-sce<-as.SingleCellExperiment(TTumor_sample.subset)
+##fibroblast vs TTumor
+###fibroblast subset 구해보자
+#Fibro.subset <- SubsetData(object = DGIST, ident.use = c('6','2')) # 58233 x 9866
+#saveRDS(Fibro.subset,"PutativeFibroblast_subclusters.rds")
+#random_sampling
+#Fibro.subset=readRDS("PutativeFibroblast_subclusters.rds")
+Fib_sample<-sample(colnames(Fibro.subset@data),1000)
+Fib_sample.subset <- SubsetData(object = Fibro.subset, cells.use = Fib_sample)
+
+sub <- MergeSeurat(object1=Fib_sample.subset,object2=TTumor_sample.subset,add.cell.id1="FIB",add.cell.id2="TT")
+
+sce<-as.SingleCellExperiment(sub)
 
 # ensg to entrz
 #https://bioconductor.org/packages/devel/bioc/vignettes/clusterProfiler/inst/doc/clusterProfiler.html#bitr-biological-id-translator
 #ensgTOentz = bitr(rownames(counts_mat), fromType="ENSEMBL", toType=c("SYMBOL","ENTREZID"), OrgDb="org.Hs.eg.db")
-ensgTOentz = readRDS("TTumor_gsva_ensgTOent.rds")
-ensgTOsym = readRDS("TTumor_gsva_ensgTOsym.rds")
+#ensgTOentz = readRDS("TTumor_gsva_ensgTOent.rds")
+#ensgTOsym = readRDS("TTumor_gsva_ensgTOsym.rds")
 
 counts_mat <- assay(sce, "counts")
-> dim(counts_mat)
-[1] 58233  2504
+#> dim(counts_mat)
+#[1] 58233  2000
 
 for (i in 1:nrow(counts_mat)){
   gene_name = ensgTOentz[ensgTOentz$ENSEMBL==rownames(counts_mat)[i],'ENTREZID']
@@ -586,8 +597,8 @@ for (i in 1:nrow(counts_mat)){
   rownames(counts_mat)[i]  <- gene_name
 }
 etz_counts_mat<-counts_mat[-(grep("ENSG", rownames(counts_mat))),]
-> dim(etz_counts_mat)
-[1] 25843  2504
+#> dim(etz_counts_mat)
+#[1] 25843  2504
 
 sample_annot <- colData(sce)
 row_annot <- DataFrame(rownames(etz_counts_mat))
@@ -597,37 +608,63 @@ newSCE <- createSCE(assayFile = etz_counts_mat, annotFile = sample_annot,
                     inputDataFrames = TRUE, createLogCounts = TRUE)
 #saveRDS(newSCE, "sce_TTumor.subset.rds")
 
-TT_es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c2 (Human, Entrez ID only)", 
-  c("REACTOME_SIGNALING_BY_EGFR_IN_CANCER","KEGG_PATHWAYS_IN_CANCER",
-    "NAKAMURA_CANCER_MICROENVIRONMENT_UP","NAKAMURA_CANCER_MICROENVIRONMENT_DN",
-    "BERTUCCI_MEDULLARY_VS_DUCTAL_BREAST_CANCER_UP","BERTUCCI_MEDULLARY_VS_DUCTAL_BREAST_CANCER_DN",
-    "SCHUETZ_BREAST_CANCER_DUCTAL_INVASIVE_UP","SCHUETZ_BREAST_CANCER_DUCTAL_INVASIVE_DN",
-    "SOTIRIOU_BREAST_CANCER_GRADE_1_VS_3_UP","SOTIRIOU_BREAST_CANCER_GRADE_1_VS_3_DN",
-    "CHARAFE_BREAST_CANCER_LUMINAL_VS_BASAL_UP","CHARAFE_BREAST_CANCER_LUMINAL_VS_BASAL_DN",
-    "CHARAFE_BREAST_CANCER_LUMINAL_VS_MESENCHYMAL_UP","CHARAFE_BREAST_CANCER_LUMINAL_VS_MESENCHYMAL_DN",
-    "CHARAFE_BREAST_CANCER_BASAL_VS_MESENCHYMAL_UP","CHARAFE_BREAST_CANCER_BASAL_VS_MESENCHYMAL_DN",
-    "DOANE_BREAST_CANCER_CLASSES_UP","DOANE_BREAST_CANCER_CLASSES_DN",
-    "DOANE_BREAST_CANCER_ESR1_UP","DOANE_BREAST_CANCER_ESR1_DN",
-    "GINESTIER_BREAST_CANCER_ZNF217_AMPLIFIED_UP","GINESTIER_BREAST_CANCER_ZNF217_AMPLIFIED_DN",
-    "GINESTIER_BREAST_CANCER_20Q13_AMPLIFICATION_UP","GINESTIER_BREAST_CANCER_20Q13_AMPLIFICATION_DN"
-    ), 
+es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c2 (Human, Entrez ID only)", 
+  c("KEGG_PATHWAYS_IN_CANCER","KEGG_NOTCH_SIGNALING_PATHWAY","KEGG_WNT_SIGNALING_PATHWAY",
+    "KEGG_P53_SIGNALING_PATHWAY","KEGG_MAPK_SIGNALING_PATHWAY","KEGG_HOMOLOGOUS_RECOMBINATION",
+    "KEGG_CELL_CYCLE"), 
   method = "ssgsea",min.sz=1, max.sz=9999, verbose=TRUE, abs.ranking=FALSE)
 
-png("ssgsea_TTumor.png")
-gsvaPlot(newSCE, TT_es, "Heatmap", condition = FALSE,
-  show_column_names = FALSE, show_row_names = TRUE, text_size = 12)
+heat<-t(scale(t(es)))
+
+#pdf("ssgsea_heat.pdf")
+#heatmap.3(heat,col=rev(brewer.pal(11, "RdBu")),
+#  key=TRUE,key.title="",key.xlab="ssGSEA score", scale="none",
+#  density.info="none",
+#  reorderfun=function(d,w) reorder(d,w, agglo.FUN=mean),
+#  trace="none",
+#  cexRow=0.7, cexCol=.1,
+#  distfun=function(x) dist(x,method="euclidean"),
+#  hclustfun=function(x) hclust(x, method="ward.D2"),
+#  ColSideColors=sidebarcolors,
+#  margin=c(10,10)
+#  )
+#dev.off()
+
+colannot<-data.frame(colnames(heat))
+colannot$colnames.heat. <- as.character(colannot$colnames.heat.)
+rownames(colannot)<-colnames(heat)
+coln = unlist(lapply(rownames(colannot), function(xx) strsplit(xx,"_")[[1]][1]))
+colannot$nn = coln
+colannot<-colannot[-1]
+colnames(colannot)<-c("cell.type")
+
+Data_type = c("red","blue")
+names(Data_type) = c("FIB","TT")
+
+library(pheatmap)
+pdf("ssgsea_pheat_02.pdf")
+pheatmap(heat, main = "", scale = "row", 
+         border_color = NA, 
+         cellheight = 30, cellwidth =.1, 
+         cutree_cols = 3, cutree_rows = 3, color=rev(brewer.pal(11, "RdBu")),
+         #gaps_row = c(13,34), gaps_col = c(41,107),
+         cluster_rows = F, cluster_cols = F,fontsize_col = .1, fontsize_row = 10, #dendrogram6
+         annotation = colannot, 
+         #annotation_colors = Data_type, 
+         # annotation_row=row1, #labels_row = "",
+         clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", 
+         #'correlation', 'euclidean', 'maximum', 'manhattan', 
+         #'#'canberra', 'binary', 'minkowski'
+         clustering_method = "average", breaks = NA)
+         #'ward', 'ward.D', 'ward.D2', 'single',
+         #'#'complete', 'average', 'mcquitty', 'median' or 'centroid'
+#title("BREAST CANCER ASSOCIATED KEGG PATHWAY",adj=0.5,line=0)
 dev.off()
 
-##fibroblast vs TTumor
-###fibroblast subset 구해보자
-Fibro.subset <- SubsetData(object = DGIST, ident.use = c('6','2')) # 58233 x 9866
-saveRDS(Fibro.subset,"PutativeFibroblast_subclusters.rds")
-#random_sampling
-Fib_sample<-sample(colnames(Fibro.subset@data),1000)
-Fib_sample.subset <- SubsetData(object = DGIST, cells.use = Fib_sample)
-Fibro<-as.SingleCellExperiment(Fib_sample.subset)
-
-counts_mat <- assay(sce, "counts")
+pdf("ssgsea.pdf")
+gsvaPlot(newSCE, heat, "Heatmap", condition = FALSE,
+  show_column_names = FALSE, show_row_names = TRUE, text_size = 5)
+dev.off()
 
 
 
