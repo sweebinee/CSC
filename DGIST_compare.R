@@ -621,6 +621,7 @@ dev.off()
 ##fibroblast vs TTumor
 ###fibroblast subset 구해보자
 Fibro.subset <- SubsetData(object = DGIST, ident.use = c('6','2')) # 58233 x 9866
+saveRDS(Fibro.subset,"PutativeFibroblast_subclusters.rds")
 #random_sampling
 Fib_sample<-sample(colnames(Fibro.subset@data),1000)
 Fib_sample.subset <- SubsetData(object = DGIST, cells.use = Fib_sample)
