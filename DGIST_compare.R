@@ -322,17 +322,17 @@ Monosub_seurat <- FindClusters(Monosub_seurat, reduction.type="pca", dims.use = 
 saveRDS(Monosub_seurat, "Monocyte_subclusters.rds")
 Monosub_seurat=readRDS(file="Monocyte_subclusters.rds")
 
-pdf("Tcell_subcluster_pca.pdf")
-PCAPlot(Tsub_seurat)
+pdf("Monocyte_subcluster_pca.pdf")
+PCAPlot(Monosub_seurat)
 dev.off()
 
-pdf("Tcell_subcluster_tsne.pdf",width=12, height=9)
-TSNEPlot(Tsub_seurat, label.size = 7, do.label = TRUE, cex=5)
+pdf("Monocyte_subcluster_tsne.pdf",width=12, height=9)
+TSNEPlot(Monosub_seurat, label.size = 7, do.label = TRUE, cex=5)
 dev.off()
 
 load("ensemblGenes2018-11-16.RData")
 
-target = 'CD114'
+target = 'CD4'
 TGgene=ensemblGenes[ensemblGenes$external_gene_name == target,'ensembl_gene_id']
 #CD45
 TGgene = 'ENSG00000081237'
@@ -378,6 +378,7 @@ dev.off()
 #BiocManager::install("monocle", version = "3.8")
 
 library(monocle)
+library(rlist)
 #https://davetang.org/muse/2017/10/01/getting-started-monocle/
 
 T_sb = importCDS(Tsub_seurat)
@@ -416,10 +417,6 @@ T_sb <- clusterCells(T_sb, rho_threshold = 2, delta_threshold = 10, skip_rho_sig
 #   1    2    3    4    5    6    7    8    9 
 #4697 3513 4194 2420 1548 1934 5636 2920 3636 
 
-pdf("MONOCLE_Tcell_subcluster_cluser01.pdf")
-plot_cell_clusters(T_sb)
-dev.off()
-
 #perform the differential gene expression analysis as before but across all cell clusters.
 clustering_DEG_genes <- differentialGeneTest(T_sb, fullModelFormulaStr = '~Cluster', cores = 8) #TAKES TOO LONG!!!!!!!!!!
 #dim(clustering_DEG_genes)
@@ -436,17 +433,17 @@ pdf("MONOCLE_Tcell_subcluster_trajectory.pdf",width=10, height=10)
 plot_cell_trajectory(T_sb, color_by = "Cluster")
 dev.off()
 
-pdf("MONOCLE_Tcell_subcluster_trajectory_tsne.pdf",width=10, height=10)
-plot_cell_clusters(T_sb)
+pdf("MONOCLE_Tcell_subcluster_trajectory_tsne_colored_Pseudotime.pdf",width=10, height=10)
+plot_cell_clusters(T_sb,color_by="Pseudotime")
 dev.off()
 
-TGgene=c('COL14A1')
+TGgene=c('ABCC9','AKAP5','ANKLE1','AP4B1-AS1','APOBEC3A','ARHGEF26-AS1','ASXL2','ATHL1','ATXN1','CBLB','CD3E','CD8A','CDKN1B','CLEC2D','CNOT6L','CTLA4','CXCL13','DENND2D','DFNB31','DGKH','DOCK8','DTHD1','DUSP4','ELF1','ENTPD1','FAM122C','FAM3C','FAM73A','FBXL18','FCRL3','GBP2','GDPD1','GLUD1P7','HAVCR2','HINT3','HNRPLL','IFNLR1','IL10','INPP4B','INPP5F','ITGA4','ITM2A','ITPKB','KIAA1324','LAG3','LINC00294','LOC100131257','LOC100190986','LOC100271836','LOC286186','LOC440354','LOC728558','LYST','MAPK13','MCL1','MTX3','NFATC1','NXNL2','ODF2L','OSBPL3','PCED1B','PCGF5','PDCD1','PDE4D','PER2','PLEKHG2','PRICKLE2-AS3','PTPRC','RAB27A','RAMP2-AS1','RGS1','RNF19A','SCD5','SF3B3','SH2D2A','SMG1P1','STAT1','STAT3','TANGO2','TATDN3','TBXA2R','TIGIT','TMEM136','TMEM212','TNFRSF1B','TNFRSF9','TP53INP1','TRAF5','TTN','TXNDC11','USP33','VSIG1','VSTM4','ZNF620','ZNF79')
 TGgene_ensg = c()
 for (i in TGgene){
   ensg<-ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id']
   if(length(ensg) >= 1){
     for (j in 1:length(ensg)){
-      tryCatch(expr=T_sb@scale.data[ensg,],
+      tryCatch(expr=Tsub_seurat@scale.data[ensg,],
         error=function(e) print(i),
         finally = ensg<-ensg[j])
     }
@@ -455,22 +452,27 @@ for (i in TGgene){
 }
 TGgene_ensg<-na.omit(TGgene_ensg)
 
-exp =  T_sb@scale.data["ENSG00000174600",]
+exp =  Tsub_seurat@scale.data["ENSG00000198851",]
+#ENSG00000010610 CD4
+#ENSG00000153563 CD8A
+#ENSG00000172116 CD8B
+#ENSG00000167286 CD3D
+#ENSG00000198851 CD3E
 
 for (i in TGgene_ensg){
-  test = T_sb@scale.data[i,]
+  test = Tsub_seurat@scale.data[i,]
   exp <- rbind(exp,test)
 }
 exp <- exp[-1,]
 
-celltypes = "CD8T"
+celltypes = "gene_CD3E"
 
 cols <- c('#D5D8DC',brewer.pal(9, "Reds"))
 
-pdf(paste0("Tcell_subcluster_",celltypes,"_tsne_.pdf"),width=12, height=9)
-df = data.frame(x=T_sb@dr$tsne@cell.embeddings[, "tSNE_1"], 
-                y=T_sb@dr$tsne@cell.embeddings[, "tSNE_2"], 
-                expression=colSums(exp))
+png(paste0("Tcell_subcluster_differentiation",celltypes,"_tsne_.png"))
+df = data.frame(x=T_sb@reducedDimA[1,], 
+                y=T_sb@reducedDimA[2,], 
+                expression=(exp))
 ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) + 
   ggtitle(paste0(celltypes, " gene exp")) +
   geom_point(size=0.5) + 
@@ -510,7 +512,7 @@ for (i in 1:nrow(my_pseudotime_de)){
 # save the top 6 genes
 my_pseudotime_de %>% arrange(qval) %>% head() %>% select(id) -> my_pseudotime_gene
 my_pseudotime_gene <- my_pseudotime_gene$id
-pseudo_Tsb <- T_sb[c('ENSG00000187608','ENSG00000074800','ENSG00000020633','ENSG00000117632','ENSG00000142669','ENSG00000169442'),]
+pseudo_Tsb <- T_sb[c('ENSG00000010610','ENSG00000153563','ENSG00000172116','ENSG00000167286','ENSG00000198851'),]
 
 png("MONOCLE_Tcell_subcluster_plot_genes_in_pseudotime.png")
 plot_genes_in_pseudotime(pseudo_Tsb,label_by_short_name=TRUE)
@@ -559,14 +561,20 @@ TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4'
 
 #####################################
 #ssGSEA
+#in MAC setwd("/Users/subincho/Desktop/CSC_noway")
+
 ## singlecellTK로 gsva
 library(singleCellTK)
 #library(clusterProfiler)
 
 #PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
 #TTumor.subset <- SubsetData(object = PTsub_seurat, ident.use = c('0','1','3','4','6','11'))
-TTumor_sample<-sample(colnames(TTumor.subset@data),1000)
-TTumor_sample.subset <- SubsetData(object = TTumor.subset, cells.use = TTumor_sample)
+#TTumor_sample <- sample(colnames(TTumor.subset@data),2000)
+#TTumor_sample.subset <- SubsetData(object = TTumor.subset, cells.use = TTumor_sample)
+PTsub_sample<-sample(colnames(PTsub_seurat@data),2000)
+PTsub_sample.subset <- SubsetData(object = PTsub_seurat, cells.use = PTsub_sample)
+Malignant.subset <- SubsetData(object = PTsub_sample.subset, ident.use = c('0','1','3','4','6','11'))
+NonMalignant.subset <- SubsetData(object = PTsub_sample.subset, ident.use = c('2','5','7','8','9','10'))
 
 ##fibroblast vs TTumor
 ###fibroblast subset 구해보자
@@ -574,10 +582,12 @@ TTumor_sample.subset <- SubsetData(object = TTumor.subset, cells.use = TTumor_sa
 #saveRDS(Fibro.subset,"PutativeFibroblast_subclusters.rds")
 #random_sampling
 #Fibro.subset=readRDS("PutativeFibroblast_subclusters.rds")
-Fib_sample<-sample(colnames(Fibro.subset@data),1000)
+Fib_sample<-sample(colnames(Fibro.subset@data),2000)
 Fib_sample.subset <- SubsetData(object = Fibro.subset, cells.use = Fib_sample)
 
-sub <- MergeSeurat(object1=Fib_sample.subset,object2=TTumor_sample.subset,add.cell.id1="FIB",add.cell.id2="TT")
+#sub <- MergeSeurat(object1=Fib_sample.subset,object2=TTumor_sample.subset,add.cell.id1="FIB",add.cell.id2="M")
+sub1 <- MergeSeurat(object1=Fib_sample.subset,object2=Malignant.subset,add.cell.id1="FIB",add.cell.id2="M")
+sub <- MergeSeurat(object1=sub1,object2=NonMalignant.subset,add.cell.id2="NM")
 
 sce<-as.SingleCellExperiment(sub)
 
@@ -606,12 +616,12 @@ row_annot <- DataFrame(rownames(etz_counts_mat))
 newSCE <- createSCE(assayFile = etz_counts_mat, annotFile = sample_annot, 
                     featureFile = row_annot, assayName = "counts",
                     inputDataFrames = TRUE, createLogCounts = TRUE)
-#saveRDS(newSCE, "sce_TTumor.subset.rds")
 
 es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c2 (Human, Entrez ID only)", 
-  c("KEGG_PATHWAYS_IN_CANCER","KEGG_NOTCH_SIGNALING_PATHWAY","KEGG_WNT_SIGNALING_PATHWAY",
-    "KEGG_P53_SIGNALING_PATHWAY","KEGG_MAPK_SIGNALING_PATHWAY","KEGG_HOMOLOGOUS_RECOMBINATION",
-    "KEGG_CELL_CYCLE"), 
+  c('KEGG_HOMOLOGOUS_RECOMBINATION','KEGG_P53_SIGNALING_PATHWAY','KEGG_CELL_CYCLE','KEGG_ECM_RECEPTOR_INTERACTION','KEGG_JAK_STAT_SIGNALING_PATHWAY','KEGG_NOTCH_SIGNALING_PATHWAY',
+    'KEGG_MAPK_SIGNALING_PATHWAY','KEGG_ADHERENS_JUNCTION','KEGG_PATHWAYS_IN_CANCER','KEGG_FOCAL_ADHESION','KEGG_WNT_SIGNALING_PATHWAY','KEGG_TGF_BETA_SIGNALING_PATHWAY',
+    'KEGG_APOPTOSIS','KEGG_VEGF_SIGNALING_PATHWAY','KEGG_MTOR_SIGNALING_PATHWAY',
+    'KEGG_CYTOKINE_CYTOKINE_RECEPTOR_INTERACTION','KEGG_PPAR_SIGNALING_PATHWAY','KEGG_CALCIUM_SIGNALING_PATHWAY','KEGG_HEDGEHOG_SIGNALING_PATHWAY'), 
   method = "ssgsea",min.sz=1, max.sz=9999, verbose=TRUE, abs.ranking=FALSE)
 
 heat<-t(scale(t(es)))
@@ -638,24 +648,44 @@ colannot$nn = coln
 colannot<-colannot[-1]
 colnames(colannot)<-c("cell.type")
 
-Data_type = c("red","blue")
-names(Data_type) = c("FIB","TT")
+cluster = unlist(lapply(rownames(colannot), function(xx) paste(strsplit(xx,"_")[[1]][-1],collapse='_')))
+colannot$cluster = cluster
+
+for (i in 1:nrow(colannot)){
+  colannot$cluster[i] <- as.character(DGIST@ident[colannot$cluster[i]])
+}
+
+
+cell.type = c("blue","red","pink")
+names(cell.type) = c("FIB","M","NM")
+
+#color = grDevices::colors()[grep('gr(a|e)y', grDevices::colors(), invert = T)]
+#n = length(unique(colannot$cluster))
+#cluster = sample(color, n)
+#names(cluster) = sort(as.numeric(unique(colannot$cluster)))
+cluster = c("#FF0000FF","#FFBF00FF","#54E511","#39A20A","#275B10","#8000FFFF","#FF00BFFF","#0040FFFF")
+names(cluster) = c("2","6","10","13","15","19","21","20")
+
+colannot_color = list(cell.type=cell.type,cluster=cluster)
 
 library(pheatmap)
-pdf("ssgsea_pheat_02.pdf")
-pheatmap(heat, main = "", scale = "row", 
+png("ssgsea_pheat_correlation_complete.png",width=800, height=700)
+par(mar=c(3,3,3,3))
+pheatmap(heat, main = "CANCER ASSOCIATED KEGG PATHWAY", scale = "row", 
          border_color = NA, 
-         cellheight = 30, cellwidth =.1, 
-         cutree_cols = 3, cutree_rows = 3, color=rev(brewer.pal(11, "RdBu")),
+         cellheight = 20, cellwidth =.1, color=rev(brewer.pal(11, "RdBu")),
+         cutree_cols = 2,
+         #cutree_rows = 3, 
          #gaps_row = c(13,34), gaps_col = c(41,107),
-         cluster_rows = F, cluster_cols = F,fontsize_col = .1, fontsize_row = 10, #dendrogram6
+         cluster_rows = F, cluster_cols = T,fontsize_col = .1, fontsize_row = 10, #dendrogram6
          annotation = colannot, 
-         #annotation_colors = Data_type, 
+         annotation_colors = colannot_color, 
          # annotation_row=row1, #labels_row = "",
-         clustering_distance_rows = "euclidean", clustering_distance_cols = "euclidean", 
+         #clustering_distance_rows = "binary", 
+         clustering_distance_cols = "correlation", 
          #'correlation', 'euclidean', 'maximum', 'manhattan', 
          #'#'canberra', 'binary', 'minkowski'
-         clustering_method = "average", breaks = NA)
+         clustering_method = "complete", breaks = NA)
          #'ward', 'ward.D', 'ward.D2', 'single',
          #'#'complete', 'average', 'mcquitty', 'median' or 'centroid'
 #title("BREAST CANCER ASSOCIATED KEGG PATHWAY",adj=0.5,line=0)
@@ -666,8 +696,37 @@ gsvaPlot(newSCE, heat, "Heatmap", condition = FALSE,
   show_column_names = FALSE, show_row_names = TRUE, text_size = 5)
 dev.off()
 
+###find marker
+cluster101315.markers <- FindMarkers(object = DGIST, ident.1 = c(10,13,15), ident.2 = c(19, 21), min.pct = 0.25)
+print(x = head(x = cluster101315.markers, n = 5))
+ensemblGenes[ensemblGenes$external_gene_name == 'ENSG00000197956','ensembl_gene_id']
 
+#VlnPlot(object = DGIST, features.plot = c("MS4A1", "CD79A"))
 
+png("cluser101315_marker_exp.png")
+FeaturePlot(object = DGIST, 
+  features.plot = c("ENSG00000102265", "ENSG00000197956", "ENSG00000091986", "ENSG00000111057", "ENSG00000169908"), 
+  cols.use = c("grey", "red"), 
+  reduction.use = "tsne")
+dev.off()
+
+cluster1921.markers <- FindMarkers(object = DGIST, ident.1 = c(19, 21), ident.2 = c(10,13,15), min.pct = 0.25)
+print(x = head(x = cluster1921.markers, n = 5))
+ensemblGenes[ensemblGenes$external_gene_name == 'ENSG00000197956','ensembl_gene_id']
+
+pdf("cluser1921_marker_exp.pdf")
+FeaturePlot(object = DGIST, 
+  features.plot = c("ENSG00000211892", "ENSG00000211897", "ENSG00000211896", "ENSG00000132465", "ENSG00000170476"), 
+  cols.use = c("grey", "red"), 
+  reduction.use = "tsne")
+dev.off()
+
+PT.subset.markers <- FindAllMarkers(object = PT.subset, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+PT.subset.markers %>% group_by(cluster) %>% top_n(2, avg_logFC)
+
+png("cluser101315_heatmap_exp.png")
+DoHeatmap(object = PT.subset, genes.use =PT.subset.markers$gene,slim.col.label = TRUE, remove.key = TRUE)
+dev.off()
 
 
 #####################################
