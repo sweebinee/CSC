@@ -533,6 +533,33 @@ PTsub_seurat <- RunPCA(PT.subset, pcs.compute = PCA, weight.by.var = FALSE)
 PTsub_seurat <- RunTSNE(PTsub_seurat, dims.use = 1:PCA, do.fast = T, seed.use = 42, perplexity=20)
 PTsub_seurat <- FindClusters(PTsub_seurat, reduction.type="pca", dims.use = 1:PCA, save.SNN = TRUE, force.recalc = TRUE)
 
+
+#cluster 101315 vs cluster 1921 vs clster20
+cellcluster<-PT.subset@ident
+
+png("Tumorcell_tsne_bycluster.png")
+df = data.frame(x=PTsub_seurat@dr$tsne@cell.embeddings[, "tSNE_1"], 
+                y=PTsub_seurat@dr$tsne@cell.embeddings[, "tSNE_2"], 
+                cluster=cellcluster)
+ggplot(df,aes(x=x, y=y, colour=cluster),mar=c(0,0,3,0)) + 
+  #ggtitle(paste0(celltypes, " gene exp")) +
+  geom_point(size=0.5) + 
+  ylab("Component 2") + 
+  xlab("Component 1") + 
+  theme_bw() +
+  theme(text = element_text(size=20),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(), 
+        axis.line=element_line(size=1),
+        axis.ticks=element_line(size=1),
+        legend.text=element_text(size=15), 
+        legend.title=element_text(size=15),
+        legend.key=element_blank(),
+        axis.text.x = element_text(size=10)
+  ) + scale_color_manual(breaks=df$cluster,
+  values=c("#54E511","#39A20A","#275B10","#8000FFFF","#0040FFFF","#FF00BFFF"))
+dev.off()
+
 saveRDS(PTsub_seurat, "PutativeTumorcell_subclusters.rds")
 PTsub_seurat=readRDS(file="PutativeTumorcell_subclusters.rds")
 
@@ -698,37 +725,86 @@ dev.off()
 
 ###find marker
 cluster101315.markers <- FindMarkers(object = DGIST, ident.1 = c(10,13,15), ident.2 = c(19, 21), min.pct = 0.25)
-print(x = head(x = cluster101315.markers, n = 5))
-ensemblGenes[ensemblGenes$external_gene_name == 'ENSG00000197956','ensembl_gene_id']
+cluster101315cut <- rownames(cluster101315.markers[cluster101315.markers$p_val_adj==0,])
+markers <- head(x = cluster101315.markers, n = 12)
 
-#VlnPlot(object = DGIST, features.plot = c("MS4A1", "CD79A"))
-
-png("cluser101315_marker_exp.png")
-FeaturePlot(object = DGIST, 
-  features.plot = c("ENSG00000102265", "ENSG00000197956", "ENSG00000091986", "ENSG00000111057", "ENSG00000169908"), 
-  cols.use = c("grey", "red"), 
-  reduction.use = "tsne")
+png("cluser101315_marker_exp.png",width=800,height=800)
+FeaturePlot(object = PTsub_seurat, pt.size = 0.4, 
+  features.plot = markers,
+  cols.use = c("grey", "red"), reduction.use = "tsne")
 dev.off()
 
-cluster1921.markers <- FindMarkers(object = DGIST, ident.1 = c(19, 21), ident.2 = c(10,13,15), min.pct = 0.25)
-print(x = head(x = cluster1921.markers, n = 5))
-ensemblGenes[ensemblGenes$external_gene_name == 'ENSG00000197956','ensembl_gene_id']
-
-pdf("cluser1921_marker_exp.pdf")
-FeaturePlot(object = DGIST, 
-  features.plot = c("ENSG00000211892", "ENSG00000211897", "ENSG00000211896", "ENSG00000132465", "ENSG00000170476"), 
-  cols.use = c("grey", "red"), 
-  reduction.use = "tsne")
-dev.off()
 
 PT.subset.markers <- FindAllMarkers(object = PT.subset, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-PT.subset.markers %>% group_by(cluster) %>% top_n(2, avg_logFC)
+#marker <- PT.subset.markers %>% group_by(cluster) %>% top_n(2, avg_logFC)
+PT.subset.cut <- rownames(PT.subset.markers[PT.subset.markers$p_val_adj<=0,])
 
-png("cluser101315_heatmap_exp.png")
-DoHeatmap(object = PT.subset, genes.use =PT.subset.markers$gene,slim.col.label = TRUE, remove.key = TRUE)
+markers <- union(cluster101315cut,PT.subset.cut)
+markers <- cluster101315cut
+PT_heat <- PTsub_seurat@data[rownames(PTsub_seurat@data)%in%markers,]
+for (i in 1:length(rownames(PT_heat))){
+  tryCatch(ensg<-ensemblGenes[ensemblGenes$ensembl_gene_id == rownames(PT_heat)[i],'external_gene_name'],
+  error=function(e) PT_heat[-i,],
+  finally = rownames(PT_heat)[i]<-ensg)
+  rownames(PT_heat)[i]<-ensg
+}
+
+colannot<-data.frame(colnames(PT_heat))
+colannot$colnames.PT_heat. <- as.character(colannot$colnames.PT_heat.)
+rownames(colannot) <- colnames(PT_heat)
+colnames(colannot) <- "cluster"
+
+for (i in 1:nrow(colannot)){
+  colannot$cluster[i] <- as.character(DGIST@ident[colannot$cluster[i]])
+}
+
+cluster = c("#54E511","#39A20A","#275B10","#8000FFFF","#FF00BFFF","#0040FFFF")
+names(cluster) = c("10","13","15","19","21","20")
+
+colannot_color = list(cluster=cluster)
+
+png("PT_all_clustermarker_correlation_average.png",width=1400, height=1400)
+par(mar=c(1,1,1,1))
+pheatmap(PT_heat, main = "clusers' marker gene", scale = "row", 
+         border_color = NA, 
+         cellheight = 10, cellwidth =.3, color=rev(brewer.pal(11, "RdBu")),
+         cutree_cols = 3,
+         #cutree_rows = 3, 
+         #gaps_row = c(13,34), gaps_col = c(41,107),
+         cluster_rows = T, cluster_cols = T,fontsize_col = .1, fontsize_row = 8, #dendrogram6
+         annotation = colannot, 
+         annotation_colors = colannot_color, 
+         # annotation_row=row1, #labels_row = "",
+         #clustering_distance_rows = "binary", 
+         clustering_distance_cols = "correlation", 
+         #'correlation', 'euclidean', 'maximum', 'manhattan', 
+         #'#'canberra', 'binary', 'minkowski'
+         clustering_method = "average", breaks = NA)
+         #'ward', 'ward.D', 'ward.D2', 'single',
+         #'#'complete', 'average', 'mcquitty', 'median' or 'centroid'
+#title("BREAST CANCER ASSOCIATED KEGG PATHWAY",adj=0.5,line=0)
 dev.off()
 
+PTsub_seurat@data <- as.matrix(PTsub_seurat@data)
+PTsub_seurat@scale.data <- as.matrix(PTsub_seurat@scale.data)
+png("Tumorcell_heatmap_marker_exp.png")
+DoHeatmap(object = PTsub_seurat, genes.use=markers, slim.col.label = TRUE, remove.key = FALSE,
+	cex.col=2, cex.row=10,
+	title="Putative Cancer cell : marker genes of each clusters expression")
+dev.off()
 
+#####################################
+#cluster1921 vs immune cell
+#step1. immune cell type 중 뭐랑 비슷한가?
+
+
+
+#####################################
+#Putative cancer cell 중 stem cell은???
+
+
+
+###################################################
 #####################################
 ###infered CNV compare with WES's EXCAVATOR results
 BiocManager::install('NGCHM')
