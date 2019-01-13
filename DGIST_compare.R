@@ -493,6 +493,86 @@ ggplot(df,aes(x=x, y=y, colour=expression),mar=c(0,0,3,0)) +
 dev.off()
 
 #saveRDS(T_sb, "Monocle_Tcell_subclusters.rds")
+T_sb <- readRDS("Monocle_Tcell_subclusters.rds")
+T_sb_table<-pData(T_sb)
+CD8T=rownames(T_sb_table[T_sb_table$Cluster%in%c('2','4','6'),]) #7867 cells
+CD4T=rownames(T_sb_table[T_sb_table$Cluster%in%c('1','3','5','7','8','9'),]) #22631 cells
+
+####checking CD8T vs CD4T
+Tsub_seurat
+CD8T_sample<-sample(CD8T,1000)
+CD4T_sample<-sample(CD4T,1000)
+
+CD8T.subset <- SubsetData(object = Tsub_seurat, cells.use = CD8T_sample)
+CD4T.subset <- SubsetData(object = Tsub_seurat, cells.use = CD4T_sample)
+DC.subset <- SubsetData(object = DGIST, ident.use = '16') #505 cells
+
+B.subset <- SubsetData(object = DGIST, ident.use = '9') #1939 cells
+B_sample <- sample(colnames(B.subset@data),1000)
+B.subset <- SubsetData(object = B.subset, cells.use = B_sample)
+
+sub <- MergeSeurat(object1=CD8T.subset,object2=CD4T.subset,add.cell.id1="CD8T",add.cell.id2="CD4T")
+sub_DC <- MergeSeurat(object1=sub,object2=DC.subset,add.cell.id2="DC")
+sub <- MergeSeurat(object1=sub_DC,object2=B.subset,add.cell.id2="B")
+
+sce<-as.SingleCellExperiment(sub)
+counts_mat <- assay(sce, "counts")
+
+for (i in 1:nrow(counts_mat)){
+  gene_name = ensgTOentz[ensgTOentz$ENSEMBL==rownames(counts_mat)[i],'ENTREZID']
+  if (length(gene_name) == 0) { next }
+  rownames(counts_mat)[i]  <- gene_name
+}
+etz_counts_mat<-counts_mat[-(grep("ENSG", rownames(counts_mat))),]
+
+T_mtx <- as.matrix(etz_counts_mat)
+T_mtx <- T_mtx[rowSums(T_mtx)>0,]
+
+library(GSVA)
+library(qusage)
+
+geneSet <- read.gmt("test.gmt")
+es <- gsva(T_mtx, as.list(geneSet), method="ssgsea", min.sz=1, max.sz=9999, verbose=TRUE, abs.ranking=FALSE)
+heat<-t(scale(t(es)))
+
+colannot<-data.frame(colnames(heat))
+colannot$colnames.heat. <- as.character(colannot$colnames.heat.)
+rownames(colannot)<-colnames(heat)
+coln = unlist(lapply(rownames(colannot), function(xx) strsplit(xx,"_")[[1]][1]))
+colannot$nn = coln
+colannot<-colannot[-1]
+colnames(colannot)<-c("cell.type")
+
+cell.type = c("red","pink","blue","green")
+names(cell.type) = c("CD8T","CD4T","DC","B")
+
+colannot_color = list(cell.type=cell.type)
+
+test <- heat[c("GSE22886_CD8_VS_CD4_NAIVE_TCELL_UP","GSE22886_CD8_VS_CD4_NAIVE_TCELL_DN"),c(1:2000)]
+
+png("test_euclidean_complete.png",width=800, height=700)
+par(mar=c(3,3,3,3))
+pheatmap(test, main = "IMMUNE ASSOCIATED PATHWAY", scale = "row", 
+         border_color = NA, 
+         cellheight = 20, cellwidth =.1, color=rev(brewer.pal(11, "RdBu")),
+         cutree_cols = 2,
+         #cutree_rows = 3, 
+         #gaps_row = c(13,34), gaps_col = c(41,107),
+         cluster_rows = F, cluster_cols = T,fontsize_col = .1, fontsize_row = 10, #dendrogram6
+         annotation = colannot, 
+         annotation_colors = colannot_color, 
+         # annotation_row=row1, #labels_row = "",
+         #clustering_distance_rows = "binary", 
+         clustering_distance_cols = "euclidean", 
+         #'correlation', 'euclidean', 'maximum', 'manhattan', 
+         #'#'canberra', 'binary', 'minkowski'
+         clustering_method = "complete", breaks = NA)
+         #'ward', 'ward.D', 'ward.D2', 'single',
+         #'#'complete', 'average', 'mcquitty', 'median' or 'centroid'
+#title("BREAST CANCER ASSOCIATED KEGG PATHWAY",adj=0.5,line=0)
+dev.off()
+
+
 
 ##Finding Genes that Change as a Function of Pseudotime
 T_sb=readRDS(file="Monocle_Tcell_subclusters.rds")
@@ -644,11 +724,8 @@ newSCE <- createSCE(assayFile = etz_counts_mat, annotFile = sample_annot,
                     featureFile = row_annot, assayName = "counts",
                     inputDataFrames = TRUE, createLogCounts = TRUE)
 
-es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c2 (Human, Entrez ID only)", 
-  c('KEGG_HOMOLOGOUS_RECOMBINATION','KEGG_P53_SIGNALING_PATHWAY','KEGG_CELL_CYCLE','KEGG_ECM_RECEPTOR_INTERACTION','KEGG_JAK_STAT_SIGNALING_PATHWAY','KEGG_NOTCH_SIGNALING_PATHWAY',
-    'KEGG_MAPK_SIGNALING_PATHWAY','KEGG_ADHERENS_JUNCTION','KEGG_PATHWAYS_IN_CANCER','KEGG_FOCAL_ADHESION','KEGG_WNT_SIGNALING_PATHWAY','KEGG_TGF_BETA_SIGNALING_PATHWAY',
-    'KEGG_APOPTOSIS','KEGG_VEGF_SIGNALING_PATHWAY','KEGG_MTOR_SIGNALING_PATHWAY',
-    'KEGG_CYTOKINE_CYTOKINE_RECEPTOR_INTERACTION','KEGG_PPAR_SIGNALING_PATHWAY','KEGG_CALCIUM_SIGNALING_PATHWAY','KEGG_HEDGEHOG_SIGNALING_PATHWAY'), 
+es <-gsvaSCE(newSCE, useAssay = "logcounts", "MSigDB c7 (Human, Entrez ID only)", 
+  c('KAECH_NAIVE_VS_DAY8_EFF_CD8_TCELL_UP'), 
   method = "ssgsea",min.sz=1, max.sz=9999, verbose=TRUE, abs.ranking=FALSE)
 
 heat<-t(scale(t(es)))
@@ -723,6 +800,10 @@ gsvaPlot(newSCE, heat, "Heatmap", condition = FALSE,
   show_column_names = FALSE, show_row_names = TRUE, text_size = 5)
 dev.off()
 
+###only Putative Cancer cell pathway
+
+
+
 ###find marker
 cluster101315.markers <- FindMarkers(object = DGIST, ident.1 = c(10,13,15), ident.2 = c(19, 21), min.pct = 0.25)
 cluster101315cut <- rownames(cluster101315.markers[cluster101315.markers$p_val_adj==0,])
@@ -740,7 +821,9 @@ PT.subset.markers <- FindAllMarkers(object = PT.subset, only.pos = TRUE, min.pct
 PT.subset.cut <- rownames(PT.subset.markers[PT.subset.markers$p_val_adj<=0,])
 
 markers <- union(cluster101315cut,PT.subset.cut)
-markers <- cluster101315cut
+#saveRDS(markers,"PT_133_markers.rds")
+#markers<-readRDS("PT_133_markers.rds")
+#markers <- cluster101315cut
 PT_heat <- PTsub_seurat@data[rownames(PTsub_seurat@data)%in%markers,]
 for (i in 1:length(rownames(PT_heat))){
   tryCatch(ensg<-ensemblGenes[ensemblGenes$ensembl_gene_id == rownames(PT_heat)[i],'external_gene_name'],
@@ -763,9 +846,9 @@ names(cluster) = c("10","13","15","19","21","20")
 
 colannot_color = list(cluster=cluster)
 
-png("PT_all_clustermarker_correlation_average.png",width=1400, height=1400)
+png("test.png",width=1400, height=1400)
 par(mar=c(1,1,1,1))
-pheatmap(PT_heat, main = "clusers' marker gene", scale = "row", 
+hm<-pheatmap(PT_heat, main = "clusers' marker gene", scale = "row", 
          border_color = NA, 
          cellheight = 10, cellwidth =.3, color=rev(brewer.pal(11, "RdBu")),
          cutree_cols = 3,
@@ -785,6 +868,10 @@ pheatmap(PT_heat, main = "clusers' marker gene", scale = "row",
 #title("BREAST CANCER ASSOCIATED KEGG PATHWAY",adj=0.5,line=0)
 dev.off()
 
+#tree gene order
+hm$tree_row[["order"]]
+가져와서 sorting!!
+
 PTsub_seurat@data <- as.matrix(PTsub_seurat@data)
 PTsub_seurat@scale.data <- as.matrix(PTsub_seurat@scale.data)
 png("Tumorcell_heatmap_marker_exp.png")
@@ -801,6 +888,55 @@ dev.off()
 
 #####################################
 #Putative cancer cell 중 stem cell은???
+
+TGgene=c('BSG','CCL5','CCR3','CD109','CD151','CD226','CD36','CD46','CD47','CD48','CD63','CD69','CD84','CD9','CNGB1','CSF3R','FCGR2A','FCGR2B','GP1BA','ICAM2','ITGA2','ITGA2B','ITGA6','ITGAV','ITGB1','ITGB3','JAM3','LAMP2','LRRC32','LYN','PECAM1','SELP','SPN','TNFSF14','VEGFA')
+TGgene_ensg = c()
+for (i in TGgene){
+  ensg<-ensemblGenes[ensemblGenes$external_gene_name == i,'ensembl_gene_id']
+  if(length(ensg) >= 1){
+    for (j in 1:length(ensg)){
+      tryCatch(expr=PTsub_seurat@scale.data[ensg,],
+        error=function(e) print(i),
+        finally = ensg<-ensg[j])
+    }
+  }
+  TGgene_ensg<-list.append(TGgene_ensg,ensg)
+}
+TGgene_ensg<-na.omit(TGgene_ensg)
+
+exp =  PTsub_seurat@scale.data["ENSG00000198851",]
+
+for (i in TGgene_ensg){
+  test = PTsub_seurat@scale.data[i,]
+  exp <- rbind(exp,test)
+}
+exp <- exp[-1,]
+
+target = "platelet"
+
+cols <- c('#D5D8DC',brewer.pal(9, "Reds"))
+pdf(paste0("PT_refCELL_",target,"_seurat.pdf"),width=12, height=9)
+df = data.frame(x=PTsub_seurat@dr$tsne@cell.embeddings[, "tSNE_1"], 
+                y=PTsub_seurat@dr$tsne@cell.embeddings[, "tSNE_2"], 
+                expression=colSums(exp))
+ggplot(df,aes(x=x, y=y, colour=expression)) + 
+  geom_point(size=3) + 
+  scale_colour_gradientn(colours = cols ) +
+  ylab("Component 2") + 
+  xlab("Component 1") + 
+  theme_bw() +
+  theme(text = element_text(size=10),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(), 
+        axis.line=element_line(size=1),
+        axis.ticks=element_line(size=1),
+        legend.text=element_text(size=20), 
+        legend.title=element_blank(),
+        legend.key=element_blank(),
+        axis.text.x = element_text(size=20)
+  )+ ggtitle(paste(target,":",'BSG','CCL5','CCR3','CD109','CD151','CD226','CD36','CD46','CD47','CD48','CD63','CD69','CD84','CD9','CNGB1','CSF3R','FCGR2A','FCGR2B','GP1BA','ICAM2','ITGA2','ITGA2B','ITGA6','ITGAV','ITGB1','ITGB3','JAM3','LAMP2','LRRC32','LYN','PECAM1','SELP','SPN','TNFSF14','VEGFA'))
+dev.off()
+
 
 
 
