@@ -1,39 +1,3 @@
-setwd("/home/subin95/CSC/RNA")
-
-cut -f1,6 PE24_RNA.genes.results > PE24_TPM.txt
-CSC_RNA_TPM.txt
-sed '/\t0.00\t0.00\t0.00\t0.00/d' CSC_RNA_TPM.txt > CSC_RNA_TPM_rm0.txt
-
-load("ensemblGenes2018-01-14.RData")
-df <- read.table("CSC_RNA_TPM_rm0.txt", sep="\t", header=TRUE)
-genes <- df$gene_id
-df_merged <- merge(df,ensemblGenes,by.x="gene_id",by.y="ensembl_gene_id")
-df_exist_gene_symbol <- df_merged[df_merged$external_gene_name!="",]
-
-write.table(df_merged, file = "CSC_TPM_rm0_HUGO.txt", sep="\t", row.names=FALSE)
-
-cat CSC_TPM_rm0_HUGO.txt | cut -f1 | sort | uniq -c | sort
-cat CSC_TPM_rm0_HUGO.txt | grep -E '7SK|ALG1L9P|BMS1P4|COG8|CYB561D2|DGCR5|DNAJC9-AS1|EMG1|GOLGA8M|H2BFS|LINC01238|LINC01297|LINC01422|LINC01481|MATR3|POLR2J4|PRSS50|RABGEF1|RGS5|RNA5-8S4|SCO2|SNORA12|SNORA63|SNORD22|SPATA13|STPG4|TMSB15B|Y_RNA|uc_338|U1|U3|Metazoa_SRP'>duplicate_TPM.txt
-sed '/7SK\t0/d' CSC_TPM_rm0_HUGO.txt|sed '/ALG1L9P\t/d'|sed '/BMS1P4\t/d'|sed '/COG8\t/d'|sed '/CYB561D2\t/d'|sed '/DGCR5\t/d'|sed '/DNAJC9-AS1\t/d'|sed '/GOLGA8M\t/d'|sed '/H2BFS\t/d'|sed '/LINC01238\t/d'|sed '/LINC01297\t/d'|sed '/LINC01422\t/d'|sed '/LINC01481\t/d'|sed '/MATR3\t/d'|sed '/POLR2J4\t/d'|sed '/PRSS50\t/d'|sed '/RABGEF1\t/d'|sed '/RGS5\t/d'|sed '/RNA5-8S4\t/d'|sed '/SNORA12\t/d'|sed '/SNORA63\t/d'|sed '/SNORD22\t/d'|sed '/SPATA13\t/d'|sed '/STPG4\t/d'|sed '/TMSB15B\t/d'|sed '/Y_RNA\t/d'|sed '/uc_338\t/d'|sed '/U3\t0/d'|sed '/Metazoa_SRP\t/d'|sed '/U3\t8.89\t/d'|sed '/U1\t0\t/d'|sed '/U1\t44.91\t/d'|sed '/EMG1\t0\t4.28/d'|sed '/EMG1\t24.09/d'|sed '/SCO2\t10.04/d'|sed '/SCO2\t41.51/d' > 1.txt
-
-cat 1.txt duplicate_TPM_mean.txt > CSC_TPM_rm0_rmdup_HUGO.txt
-
-source("http://bioconductor.org/biocLite.R")
-biocLite("preprocessCore")
-library(preprocessCore) 
-
-qn <- read.table("CSC_TPM_rm0_rmdup_HUGO.txt", sep="\t", header=TRUE)
-rownames(qn)<- qn[,1]
-qn <- qn[,-1]
-
-qn.qn<-normalize.quantiles(data.matrix(qn))
-df <- as.data.frame(qn.qn)
-rownames(df) <- rownames(qn)
-colnames(df) <- colnames(qn)
-
-write.table(df, file = "CSC_TPM_rm0_rmdup_qn_HUGO.txt", sep="\t", row.names=TRUE)
-
-
 
 df <- read.table("CIBERSORT_DGIST.txt", sep="\t", header=TRUE)
 df.m <- melt(df)
