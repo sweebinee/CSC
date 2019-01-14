@@ -27,7 +27,7 @@ for(i in dup_gene){
 }
 #write.table(rmdup, file = "CSC_RNA_rawCount_rm0_HUGO_rmdup.txt", sep="\t", row.names=FALSE)
 
-#####################################################################
+#############################################################################################################
 ###MCPcounter
 if (!requireNamespace("BiocManager"))
     install.packages("BiocManager")
@@ -36,8 +36,7 @@ BiocManager::install("")
 
 library(devtools)
 install_github("ebecht/MCPcounter",ref="master", subdir="Source")
-
-################################################################################################
+############################################################################
 MCPcounter.estimate         package:MCPcounter         R Documentation
 
 MCPcounter.estimate
@@ -93,23 +92,23 @@ Examples:
      heatmap(as.matrix(ExampleEstimates),col=colorRampPalette(c("blue","white","red"))(100)) 
      
 ############################################################################################################
-
-
-cat CSC_RNA_rawCount_rm0_HUGO.txt | cut -f1 | sort | uniq -c | sort
-cat CSC_RNA_rawCount_rm0_HUGO.txt | grep -E 'U1|U3|Metazoa_SRP' > pe24_duplicate.txt
-sed '/7SK\t0/d' CSC_rawCount_rm0_HUGO.txt|sed '/ALG1L9P\t/d'|sed '/BMS1P4\t/d'|sed '/COG8\t/d'|sed '/CYB561D2\t/d'|sed '/DGCR5\t/d'|sed '/DNAJC9-AS1\t/d'|sed '/GOLGA8M\t/d'|sed '/H2BFS\t/d'|sed '/LINC01238\t/d'|sed '/LINC01297\t/d'|sed '/LINC01422\t/d'|sed '/LINC01481\t/d'|sed '/MATR3\t/d'|sed '/POLR2J4\t/d'|sed '/PRSS50\t/d'|sed '/RABGEF1\t/d'|sed '/RGS5\t/d'|sed '/RNA5-8S4\t/d'|sed '/SNORA12\t/d'|sed '/SNORA63\t/d'|sed '/SNORD22\t/d'|sed '/SPATA13\t/d'|sed '/STPG4\t/d'|sed '/TMSB15B\t/d'|sed '/Y_RNA\t/d'|sed '/uc_338\t/d'|sed '/U3\t0/d'|sed '/Metazoa_SRP\t/d'|sed '/U3\t1\t2\t1\t2/d'|sed '/U1\t0\t2\t0\t1/d'|sed '/U1\t2\t1\t1\t0/d'|sed '/U1\t0\t0\t0\t1/d'|sed '/U1\t0\t4\t5\t0/d'|sed '/EMG1\t0\t24.21/d'|sed '/EMG1\t159.63/d'|sed '/SCO2\t80.8/d'|sed '/SCO2\t18.72/d' > 1.txt
-cat 1.txt duplicate_mean.txt > CSC_rawCount_rm0_rmdup_HUGO.txt
-
-setwd("/storage2/Project/CSC/RNA/04_MCPcounter")
-setwd("/home/subin95/CSC/MCPcounter")
+setwd("/storage2/Project/CSC/RNA/03_Deconvolution/MCPcounter")
 
 library(MCPcounter)
+library(preprocessCore)
 
-exp <- read.table("/home/subin95/CSC/RNA/CSC_rawCount_rm0_rmdup_HUGO.txt", sep="\t", header=TRUE,row.names=1)
+exp <- read.table("/storage2/Project/CSC/RNA/03_Deconvolution/CSC_RNA_rawCount_rm0_HUGO_rmdup.txt", sep="\t", header=TRUE,row.names=1)
+exp_norm <- normalize.quantiles(data.matrix(exp))
+row.names(exp_norm) <- row.names(exp)
+colnames(exp_norm) <- colnames(exp)
 
-CSC=MCPcounter.estimate(exp,featuresType="HUGO_symbols")
+CSC=MCPcounter.estimate(exp_norm,featuresType="HUGO_symbols") 
+write.table(CSC, file = "MCPcounter_result.txt", sep="\t", row.names=FALSE)
+###
+
+png("result.png")
 heatmap(as.matrix(CSC),sideColors=c("darkgreen", "yellowgreen"),col=colorRampPalette(c("blue","white","red"))(100)) 
-
+dev.off()
 
 library(ggplot2)
 library(reshape)

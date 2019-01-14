@@ -3,7 +3,7 @@
 # xenolist <- samplelist[,c("PDX0","PDX1","PDX2","PDX3")][!is.na(samplelist[,c("PDX0","PDX1","PDX2","PDX3")])]
 # allsamplelist <- c(tumorlist, xenolist)
 
-samplelist = c('PE24','PE25','PE26','PE29')
+samplelist = c('PE24','PE25','PE26','PE29','PE32','PE36')
 setwd("/storage2/Project/CSC/WES/04_CNV/EXCAVATOR2/W_60000")
 
 chrLen <- read.delim("/storage2/Project/CSC/WES/04_CNV/EXCAVATOR2/chrLen.txt", header = F, stringsAsFactors = F)
@@ -196,7 +196,7 @@ for(i in 1:length(samplelist)){
   png(filename=paste0("/storage2/Project/CSC/WES/04_CNV/EXCAVATOR2/W_10K_",tsample,"_grey.png"), width = 2000, height = 800, res=75)
 #  par(mfrow=c(2,1))
   
-  plot(PositionSeqT,log2RSeqT,ylim=c(-2,2),main=tsample,pch=19,cex=0.3,lwd=0.1,col="grey",xlab="chromosome",ylab="log2ratio",xaxt='n')
+  plot(PositionSeqT,log2RSeqT,ylim=c(-2,2),main=tsample,pch=19,cex=0.3,lwd=0.1,col="white",xlab="chromosome",ylab="log2ratio",xaxt='n')
 
   chrCallT <- as.character(zz[,1])
   StartCallT <- as.numeric(as.character(zz[,2]))
