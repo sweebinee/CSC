@@ -103,7 +103,7 @@ row.names(exp_norm) <- row.names(exp)
 colnames(exp_norm) <- colnames(exp)
 
 CSC=MCPcounter.estimate(exp_norm,featuresType="HUGO_symbols") 
-write.table(CSC, file = "MCPcounter_result.txt", sep="\t", row.names=FALSE)
+write.table(CSC, file = "MCPcounter_result.txt", sep="\t", row.names=TRUE)
 ###
 
 png("result.png")
