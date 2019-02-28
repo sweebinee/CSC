@@ -65,7 +65,7 @@ Haematopoietic_stem_cells                Macrophage                  Monocyte
                        12                     34579 
 
 #다쓰면 데이터 너무커서 CIBERSORT에 안올라감 1/8 = 7593 CELL 정도 써야함 (500개이상이면 많은거) 
-#500개 random sampling
+#300개 random sampling
 #bulkRNA에서 쓴 gene만 보자
 bulk = read.table(file="/storage2/Project/CSC/RNA/03_Deconvolution/CSC_RNA_TPM_rm0_HUGO_rmdup.txt", header=TRUE, stringsAsFactors=FALSE)
 gene <- bulk$external_gene_name
@@ -80,7 +80,7 @@ HP_raw_non0 <- as.matrix(HP_raw[Matrix::rowSums(HP_raw)>0,])
 HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%gene),which(colnames(HP_raw_non0) %in% cell)]
 > dim(HP_raw_non0_reduced)
 [1] 26008  4109
-write.table(HP_raw_non0_reduced,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+write.table(HP_raw_non0_reduced,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample200_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
 #CIBERSORT_phenotye_file
@@ -95,13 +95,13 @@ for(i in 1:ncol(HP_ph)){
 HP_ph[is.na(HP_ph)] <- 2
 #write.table(HP_ph,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
 #reduce tcell
-tcell_list<-sample(colnames(HP_ph[,HP_ph["T_cell",]==1]),500)
-B_list<-sample(colnames(HP_ph[,HP_ph["B_cell",]==1]),500)
-DC_list<-sample(colnames(HP_ph[,HP_ph["Dendritic",]==1]),500)                   
-Macro_list<-sample(colnames(HP_ph[,HP_ph["Macrophage",]==1]),500)                   
-Mono_list<-sample(colnames(HP_ph[,HP_ph["Monocyte",]==1]),500)                   
-Neutro_list<-sample(colnames(HP_ph[,HP_ph["Neutrophil",]==1]),500)                   
-NK_list<-sample(colnames(HP_ph[,HP_ph["NK_cell",]==1]),500)                   
+tcell_list<-sample(colnames(HP_ph[,HP_ph["T_cell",]==1]),200)
+B_list<-sample(colnames(HP_ph[,HP_ph["B_cell",]==1]),200)
+DC_list<-sample(colnames(HP_ph[,HP_ph["Dendritic",]==1]),200)                   
+Macro_list<-sample(colnames(HP_ph[,HP_ph["Macrophage",]==1]),200)                   
+Mono_list<-sample(colnames(HP_ph[,HP_ph["Monocyte",]==1]),200)                   
+Neutro_list<-sample(colnames(HP_ph[,HP_ph["Neutrophil",]==1]),200)                   
+NK_list<-sample(colnames(HP_ph[,HP_ph["NK_cell",]==1]),200)                   
 
 BM_list<-colnames(HP_ph[,HP_ph["Bone_marrow_cells",]==1])
 CMP_list<-colnames(HP_ph[,HP_ph["CMP",]==1])
@@ -112,7 +112,34 @@ Myelo_list<-colnames(HP_ph[,HP_ph["Myelocyte",]==1])
 ProM_list<-colnames(HP_ph[,HP_ph["Pro-Myelocyte",]==1])
 
 cell <- union(union(union(union(union(union(union(union(union(union(union(union(union(tcell_list,B_list),DC_list),Macro_list),Mono_list),Neutro_list),NK_list),BM_list),CMP_list),Erythro_list),GMP_list),Haema_list),Myelo_list),ProM_list)
-#4109 cells
+#4109 cells : 500
+#2709 cells : 300
+#1309 cells : 100
+#2009 cells : 200
 
 HP_ph_reduced<-HP_ph[,which(colnames(HP_ph) %in% cell)]
-write.table(HP_ph_reduced,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
+write.table(HP_ph_reduced,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample200_reduced.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
+
+for(i in 1:10){
+	tcell_list<-sample(colnames(HP_ph[,HP_ph["T_cell",]==1]),200)
+	B_list<-sample(colnames(HP_ph[,HP_ph["B_cell",]==1]),200)
+	DC_list<-sample(colnames(HP_ph[,HP_ph["Dendritic",]==1]),200)                   
+	Macro_list<-sample(colnames(HP_ph[,HP_ph["Macrophage",]==1]),200)                   
+	Mono_list<-sample(colnames(HP_ph[,HP_ph["Monocyte",]==1]),200)                   
+	Neutro_list<-sample(colnames(HP_ph[,HP_ph["Neutrophil",]==1]),200)                   
+	NK_list<-sample(colnames(HP_ph[,HP_ph["NK_cell",]==1]),200)                   
+	BM_list<-colnames(HP_ph[,HP_ph["Bone_marrow_cells",]==1])
+	CMP_list<-colnames(HP_ph[,HP_ph["CMP",]==1])
+	Erythro_list<-colnames(HP_ph[,HP_ph["Erythroblast",]==1])
+	GMP_list<-colnames(HP_ph[,HP_ph["GMP",]==1])
+	Haema_list<-colnames(HP_ph[,HP_ph["Haematopoietic_stem_cells",]==1])
+	Myelo_list<-colnames(HP_ph[,HP_ph["Myelocyte",]==1])
+	ProM_list<-colnames(HP_ph[,HP_ph["Pro-Myelocyte",]==1])
+	cell <- union(union(union(union(union(union(union(union(union(union(union(union(union(tcell_list,B_list),DC_list),Macro_list),Mono_list),Neutro_list),NK_list),BM_list),CMP_list),Erythro_list),GMP_list),Haema_list),Myelo_list),ProM_list)
+	HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%gene),which(colnames(HP_raw_non0) %in% cell)]
+	write.table(HP_raw_non0_reduced,paste0('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_200/ref_sample200_reduced_',i,'.txt'),sep = "\t", row.names=TRUE, col.names=TRUE)
+	HP_ph_reduced<-HP_ph[,which(colnames(HP_ph) %in% cell)]
+	write.table(HP_ph_reduced,paste0('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_200/pheno_sample200_reduced_',i,'.txt'),sep = "\t", row.names=TRUE, col.names=FALSE)
+}
+
+
