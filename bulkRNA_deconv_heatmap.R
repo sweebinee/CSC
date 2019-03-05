@@ -80,17 +80,22 @@ library(ggrepel)
 for(i in 1:nrow(merge_mtx)){
 	rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
 }
+
+merge_mtx<-merge_mtx[-c(79:84),]
+
 # Add text to the plot
 .labs <- rownames(merge_mtx)
-b <- ggplot(merge_mtx, aes(x = scRNA, y = Xcell))
+b <- ggplot(merge_mtx, aes(x = scRNA, y = CIBERSORT))
 
-png("CRITERIA_01_dot_scRNA_Xcell.png",width=800, height=600)
+png("CRITERIA_03_dot_scRNA_CIBERSORT_noT.png",width=800, height=600)
 b + xlim(0.001, 1)+ylim(0.001, 1)+
   geom_point(aes(color = Var1)) +
   geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
   ggpubr::stat_cor(label.x = 0.003)+
   geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
   scale_color_manual(values = c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"))+
-  labs(title = "scRNA vs Xcell\n", color = "cellTypes\n")
+  labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
 dev.off()
+
+
 
