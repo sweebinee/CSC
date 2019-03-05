@@ -37,7 +37,7 @@ M_list&M2_list
 #그냥 숫자 입력하면 벤다이어그램 그려주는 웹서비스
 #http://eulerr.co/
 #
-cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function > PE17_cut.txt #M1 M2 공통
+cut -f3-8,11,13-15 PE17_annovar.out3.exonic_variant_function > PE17_cut.txt #M1 M2 S 공통
 cut -f10 PE17_cut.txt | sed 's/:/\t/g' | cut -f5 > PE17_AF.txt
 paste PE17_cut.txt PE17_AF.txt > PE17_result.txt
 #
@@ -106,9 +106,9 @@ def PASS_dif_depth(sample):
 	result.close()
 
 def grep_PASS(sample,tools):
-	if tools == 'M1': maindir = '/storage2/Project/CSC/WES/03_SNV/test_mergedBAM/MuTect'
-	elif tools == 'M2' : maindir = '/storage2/Project/CSC/WES/03_SNV/test_mergedBAM/MuTect2'
-	elif tools == 'S' : maindir = '/storage2/Project/CSC/WES/03_SNV/test_mergedBAM/Strelka'
+	if tools == 'M1': maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect'
+	elif tools == 'M2' : maindir = '/storage2/Project/CSC/WES/03_SNV/MuTect2'
+	elif tools == 'S' : maindir = '/storage2/Project/CSC/WES/03_SNV/Strelka'
 	result = open("%s/%s_cut.txt"%(maindir,sample),'r') 
 	result_lines = result.readlines()
 	snv = set()
@@ -193,11 +193,11 @@ fig, ax  = venn5(labels, names=['PE17', 'PE18', 'PE20', 'PE24', 'PE32'])
 fig.savefig(save_file)
 plt.close()
 
-sample='PE32'
+sample='PE36'
 M1 = set(grep_PASS(sample,'M1'))
 M2 = set(grep_PASS(sample,'M2'))
 S =  set(grep_PASS(sample,'S'))
-PE32 = M1|M2|S
+PE36= M1|M2|S
 
 ###################################################################################################
 ###################################################################################################

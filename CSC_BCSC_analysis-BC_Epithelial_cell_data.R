@@ -77,14 +77,25 @@ HP_raw_non0 <- as.matrix(HP_raw[Matrix::rowSums(HP_raw)>0,])
 [1] 35126 60749
 > dim(HP_raw)
 [1] 36826 60749
-HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%gene),which(colnames(HP_raw_non0) %in% cell)]
-> dim(HP_raw_non0_reduced)
-[1] 26008  4109
-write.table(HP_raw_non0_reduced,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%gene),]
+HP_celltype_exp <- matrix(, nrow=nrow(HP_raw_non0_reduced), ncol=14)
+celltypes <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
+colnames(HP_celltype_exp) <- celltypes 
+rownames(HP_celltype_exp) <- rownames(HP_raw_non0_reduced)
+for(i in celltypes){
+	cell <- rownames(HP_meta[HP_meta$cell_label_details==i,])
+	for(j in rownames(HP_celltype_exp)){
+		avg <- mean(HP_raw_non0_reduced[j,which(colnames(HP_raw_non0_reduced)%in%cell)])
+		HP_celltype_exp[j,i] <- avg
+	}
+}
+> dim(HP_celltype_exp)
+[1] 26008    14
+write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
 #CIBERSORT_phenotye_file
-HP_ph <- matrix(,nrow=14,ncol=60749)
+HP_ph <- matrix(,nrow=14,ncol=14)
 rownames(HP_ph) <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
 colnames(HP_ph) <- colnames(HP_raw_non0)
 for(i in 1:ncol(HP_ph)){
