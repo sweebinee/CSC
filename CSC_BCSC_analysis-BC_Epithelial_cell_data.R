@@ -5,7 +5,6 @@ library(Seurat)
 library(ggplot2)
 library(RColorBrewer)
 
-
 setwd('/storage2/Project/CSC/10X/DGIST_data02')
 DGIST=readRDS(file="/storage2/Project/CSC/10X/DGIST_data02/BC_Epithelial_cell_data/EpithelialCells_SeuratSet.rds")
 #BCSC_meta$ = readRDS(file="/storage2/Project/CSC/10X/DGIST_data02/BC_Epithelial_cell_data/Epithelial_metadata.rds")
@@ -67,14 +66,20 @@ Haematopoietic_stem_cells                Macrophage                  Monocyte
 #다쓰면 데이터 너무커서 CIBERSORT에 안올라감 1/8 = 7593 CELL 정도 써야함 (500개이상이면 많은거) 
 #300개 random sampling
 #bulkRNA에서 쓴 gene만 보자
-bulk = read.table(file="/storage2/Project/CSC/RNA/03_Deconvolution/CSC_RNA_TPM_rm0_HUGO_rmdup.txt", header=TRUE, stringsAsFactors=FALSE)
-gene <- bulk$external_gene_name
+#bulk = read.table(file="/storage2/Project/CSC/RNA/03_Deconvolution/CSC_RNA_TPM_rm0_HUGO_rmdup.txt", header=TRUE, stringsAsFactors=FALSE)
+#gene <- bulk$external_gene_name
 
 #CIBERSORT_reference_sample_file
-HP_raw_non0 <- as.matrix(HP_raw[Matrix::rowSums(HP_raw)>0,])
-HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%gene),]
+HP_norm_non0 <- as.matrix(HP_norm[Matrix::rowSums(HP_norm)>0,])
+#HP_norm_non0_reduced <- HP_norm_non0[which(rownames(HP_norm_non0)%in%gene),]
 
-HP_celltype_exp <- matrix(, nrow=nrow(HP_raw_non0_reduced), ncol=112)
+CIBERSORT_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_signature_gene_list.txt')$V1
+S12_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S12_signature_gene_list.txt')$V1
+S3_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S3_signature_gene_list.txt')$V1
+sig_gene <- union(union(CIBERSORT_gene,S12_gene),S3_gene)
+HP_norm_non0_reduced <- HP_norm_non0[which(rownames(HP_norm_non0)%in%sig_gene),]
+
+HP_celltype_exp <- matrix(, nrow=nrow(HP_norm_non0_reduced), ncol=112)
 sample=unique(HP_meta$sample_name)
 celltypes <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
 coln <- c()
@@ -86,35 +91,61 @@ for(i in celltypes){
 }
 
 colnames(HP_celltype_exp) <- coln 
-rownames(HP_celltype_exp) <- rownames(HP_raw_non0_reduced)
+rownames(HP_celltype_exp) <- rownames(HP_norm_non0_reduced)
 
 for(i in celltypes){
 	for(j in sample){
 		cell <- rownames(HP_meta[HP_meta$cell_label_details==i&HP_meta$sample_name==j,])
 		for(z in rownames(HP_celltype_exp)){
-			avg <- mean(HP_raw_non0_reduced[z,which(colnames(HP_raw_non0_reduced)%in%cell)])
+			avg <- mean(HP_norm_non0_reduced[z,which(colnames(HP_norm_non0_reduced)%in%cell)])
 			HP_celltype_exp[z,paste0(i,":",j)] <- avg
 			print(paste0(i,":",j))
 		}
 	}
 }
-> dim(HP_celltype_exp)
-[1] 26008    112
-write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
-HP_celltype_exp<-read.table('/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=1, header=TRUE, stringsAsFactors=FALSE)
+dim(HP_celltype_exp)
 HP_celltype_exp[is.na(HP_celltype_exp)]<-0
-write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
+write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 #CIBERSORT_phenotye_file
 HP_ph <- matrix(,nrow=14,ncol=112)
 rownames(HP_ph) <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
 colnames(HP_ph) <- colnames(HP_celltype_exp)
-for(i in colnames(HP_ph)){
+
+for(i in colnames(HP_ph))){
 	celltype <- strsplit(i,':')[[1]][1]
 	HP_ph[celltype,i] = 1
 }
-
 HP_ph[is.na(HP_ph)] <- 2
 write.table(HP_ph,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
+
+
+#scRNA-seq DEG
+blood = readRDS(file="/storage2/Project/CSC/10X/DGIST_data02/BC_Hematopoietic_cell_data/BC_blood_seurat.rds")
+blood_cellTypes = blood
+ident_mtx <- as.matrix(blood_cellTypes@active.ident)
+for(i in rownames(ident_mtx)){
+	ident_mtx[i,1]<-HP_meta[i,"cell_label_details"]
+}
+blood_cellTypes@active.ident<-factor(ident_mtx[,1])
+> levels(blood_cellTypes@active.ident)
+ [1] "B_cell"                    "Bone_marrow_cells"        
+ [3] "CMP"                       "Dendritic"                
+ [5] "Erythroblast"              "GMP"                      
+ [7] "Haematopoietic_stem_cells" "Macrophage"               
+ [9] "Monocyte"                  "Myelocyte"                
+[11] "Neutrophil"                "NK_cell"                  
+[13] "Pro-Myelocyte"             "T_cell"    
+
+for(i in levels(blood_cellTypes@active.ident)){
+	assign(paste0(i,"_DEG"), FindMarkers(blood_cellTypes, ident.1=i, ident.2=NULL, only.pos=TRUE))
+}
+
+
+for(i in levels(blood_cellTypes@active.ident)){
+	saveRDS(get(paste0(i,"_DEG")),paste0(i,"_DEG.rds"))
+}
+
+

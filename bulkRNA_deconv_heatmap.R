@@ -87,7 +87,7 @@ merge_mtx<-merge_mtx[-c(79:84),]
 .labs <- rownames(merge_mtx)
 b <- ggplot(merge_mtx, aes(x = scRNA, y = CIBERSORT))
 
-png("CRITERIA_03_dot_scRNA_CIBERSORT_noT.png",width=800, height=600)
+png("CRITERIA_01_dot_scRNA_CIBERSORT_noT.png",width=800, height=600)
 b + xlim(0.001, 1)+ylim(0.001, 1)+
   geom_point(aes(color = Var1)) +
   geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
@@ -97,5 +97,7 @@ b + xlim(0.001, 1)+ylim(0.001, 1)+
   labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
 dev.off()
 
-
+#spearman correlation
+cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="pearson")
+cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="spearman")
 
