@@ -99,7 +99,11 @@ for(i in celltypes){
 	}
 }
 > dim(HP_celltype_exp)
-[1] 26008    14
+[1] 26008    112
+write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+
+HP_celltype_exp<-read.table('/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=1, header=TRUE, stringsAsFactors=FALSE)
+HP_celltype_exp[is.na(HP_celltype_exp)]<-0
 write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
@@ -107,11 +111,10 @@ write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_r
 HP_ph <- matrix(,nrow=14,ncol=112)
 rownames(HP_ph) <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
 colnames(HP_ph) <- colnames(HP_celltype_exp)
-for(i in colnames(HP_ph))){
-	celltype <- strsplit(i,':')[1]
+for(i in colnames(HP_ph)){
+	celltype <- strsplit(i,':')[[1]][1]
 	HP_ph[celltype,i] = 1
 }
-colsum(HP_ph)
 
 HP_ph[is.na(HP_ph)] <- 2
-#write.table(HP_ph,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
+write.table(HP_ph,'/storage2/Project/CSC/10X/DGIST_data02/pheno_sample.txt',sep = "\t", row.names=TRUE, col.names=FALSE)
