@@ -142,3 +142,10 @@ blood_cellTypes@active.ident<-factor(ident_mtx[,1])
 for(i in levels(blood_cellTypes@active.ident)){
 	assign(paste0(i,"_DEG"), FindMarkers(blood_cellTypes, ident.1=i, ident.2=NULL, only.pos=TRUE))
 }
+
+
+for(i in levels(blood_cellTypes@active.ident)){
+	saveRDS(get(paste0(i,"_DEG")),paste0(i,"_DEG.rds"))
+}
+
+
