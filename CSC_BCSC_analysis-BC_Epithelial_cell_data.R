@@ -18,8 +18,6 @@ pdf("DGIST_data02_BCSC_tsne.pdf")
 DimPlot(DGIST,reduction = "tsne")
 dev.off()
 
-
-
 #윤정교 교수님 wnt signal
 target = 'RHF43'
 
