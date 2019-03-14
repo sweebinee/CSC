@@ -27,6 +27,8 @@ dev.off()
 ###############################################################################
 #scatter plot
 library(plotly)
+library("ggpubr")
+
 
 mtx <- read.table(file="DGIST_result_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
 mtx <- as.matrix(mtx)
@@ -45,6 +47,13 @@ for(i in toolnames){
   plot(x=get(paste0(i,"_merge"))$scRNA,y=get(paste0(i,"_merge"))$value)
   dev.off()
 }
+#only CIBERSORT
+CIBERSORT <- read.delim("01CRITERIA_CIBERSORT.txt", header=T, stringsAsFactors=F, row.names=1)
+CIBERSORT <- melt(as.matrix(CIBERSORT))
+mtx_melt <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
+colnames(mtx_melt)[4]<-"CIBERSORT"
+merge_mtx <- mtx_melt
+
 
 colnames(MCPcounter_merge)[4] <- "MCPcounter"
 merge_mtx <- merge(MCPcounter_merge,CIBERSORT_melt,by=c('Var1','Var2'))
@@ -52,11 +61,12 @@ colnames(merge_mtx)[5]<-"CIBERSORT"
 merge_mtx <- merge(merge_mtx,Xcell_melt,by=c('Var1','Var2'))
 colnames(merge_mtx)[6]<-"Xcell"
 
+
 # Correlation panel
 panel.cor <- function(x, y){
     usr <- par("usr"); on.exit(par(usr))
     par(usr = c(0, 1, 0, 1))
-    r <- round(cor(x, y), digits=2)
+    r <- round(cor(x, y,method="spearman"), digits=2)
     txt <- paste0("R = ", r)
     cex.cor <- 0.8/strwidth(txt)
     text(0.5, 0.5, txt, cex = cex.cor * r)
@@ -66,11 +76,11 @@ upper.panel<-function(x, y){
   points(x,y, pch = 19)
 }
 # Create the plots
-png("CRITERIA_01_dot.png",width=600, height=600)
-pairs(merge_mtx[,3:6], 
+png("mark04_dot.png",width=600, height=600)
+pairs(merge_mtx[,3:4], 
       lower.panel = panel.cor,
       upper.panel = upper.panel,
-      main="Title")
+      main="scRNA vs CIBERSORT\n")
 dev.off()
 
 
@@ -78,20 +88,24 @@ dev.off()
 library(ggrepel)
 
 for(i in 1:nrow(merge_mtx)){
-	rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
+  rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
 }
 
+#remove Tcell
 merge_mtx<-merge_mtx[-c(79:84),]
 
 # Add text to the plot
 .labs <- rownames(merge_mtx)
-b <- ggplot(merge_mtx, aes(x = scRNA, y = CIBERSORT))
+b <- ggscatter(merge_mtx, x = "scRNA", y = "CIBERSORT",
+   add = "reg.line", 
+   add.params = list(color = "blue", fill = "lightgray"),
+   conf.int = TRUE)
 
-png("CRITERIA_01_dot_scRNA_CIBERSORT_noT.png",width=800, height=600)
+png("01CRITERIA_dot_scRNA_CIBERSORT.png",width=800, height=600)
 b + xlim(0.001, 1)+ylim(0.001, 1)+
   geom_point(aes(color = Var1)) +
   geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
-  ggpubr::stat_cor(label.x = 0.003)+
+  ggpubr::stat_cor(label.x = 0.003,method="spearman")+
   geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
   scale_color_manual(values = c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"))+
   labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
