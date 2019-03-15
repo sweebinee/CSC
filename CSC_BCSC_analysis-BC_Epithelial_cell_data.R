@@ -75,7 +75,8 @@ CIBERSORT_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_s
 S12_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S12_signature_gene_list.txt')$V1
 S3_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S3_signature_gene_list.txt')$V1
 sig_gene <- union(union(CIBERSORT_gene,S12_gene),S3_gene)
-HP_norm_non0_reduced <- HP_norm_non0[which(rownames(HP_norm_non0)%in%sig_gene),]
+
+HP_norm_non0_reduced <- HP_norm_non0[which(rownames(HP_norm_non0)%in%union_DEG),]
 
 HP_celltype_exp <- matrix(, nrow=nrow(HP_norm_non0_reduced), ncol=112)
 sample=unique(HP_meta$sample_name)
@@ -95,7 +96,7 @@ for(i in celltypes){
 	for(j in sample){
 		cell <- rownames(HP_meta[HP_meta$cell_label_details==i&HP_meta$sample_name==j,])
 		for(z in rownames(HP_celltype_exp)){
-			avg <- mean(HP_norm_non0_reduced[z,which(colnames(HP_norm_non0_reduced)%in%cell)])
+			avg <- mean(HP_norm_non0_reduced[z,which(colnames(HP_norm_non0_reduced)%in%cell)],na.rm = TRUE)
 			HP_celltype_exp[z,paste0(i,":",j)] <- avg
 			print(paste0(i,":",j))
 		}
@@ -106,6 +107,10 @@ dim(HP_celltype_exp)
 HP_celltype_exp[is.na(HP_celltype_exp)]<-0
 
 write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_sample_reduced.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+
+#weighting
+HP_celltype_exp <- read.table("/storage2/Project/CSC/10X/DGIST_data02/mark05_ref.txt",sep='\t',header=TRUE,row.names=1)
+
 
 #CIBERSORT_phenotye_file
 HP_ph <- matrix(,nrow=14,ncol=112)
@@ -160,7 +165,20 @@ for(i in celltypes){
 
 union_DEG<-union(union(union(union(union(union(union(union(union(union(union(union(union(T_cell_DEG_cut_list,Monocyte_DEG_cut_list),Macrophage_DEG_cut_list),B_cell_DEG_cut_list),Dendritic_DEG_cut_list),NK_cell_DEG_cut_list),GMP_DEG_cut_list),CMP_DEG_cut_list),Neutrophil_DEG_cut_list),Haematopoietic_stem_cells_DEG_cut_list),Bone_marrow_cells_DEG_cut_list),Erythroblast_DEG_cut_list),Myelocyte_DEG_cut_list),ProMyelocyte_DEG_cut_list)
 
-for(i in celltypes){
-  deg <- get(paste0(i,"_DEG_cut_list"))
-  assign(paste0(i,"_only"), setdiff(deg,union_DEG))
+#make weight table
+DEG_w <- matrix(,nrow=length(union_DEG), ncol=1)
+rownames(DEG_w) <- union_DEG
+for(i in union_DEG){
+  w = 0
+  for(j in celltypes){
+    deg <- get(paste0(j,"_DEG_cut_list"))
+    if(i %in% deg) w = w+1
+  }
+  DEG_w[i,1] <- w
 }
+> table(DEG_w)
+DEG_w
+   1    2    3    4    5    6    7 
+1683  812  463  190   64   49    3 
+
+
