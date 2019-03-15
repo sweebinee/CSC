@@ -27,7 +27,7 @@ dev.off()
 ###############################################################################
 #scatter plot
 library(plotly)
-library("ggpubr")
+library(ggpubr)
 
 
 mtx <- read.table(file="DGIST_result_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
@@ -48,7 +48,7 @@ for(i in toolnames){
   dev.off()
 }
 #only CIBERSORT
-CIBERSORT <- read.delim("01CRITERIA_CIBERSORT.txt", header=T, stringsAsFactors=F, row.names=1)
+CIBERSORT <- read.delim("mark05_CIBERSORT.txt", header=T, stringsAsFactors=F, row.names=1)
 CIBERSORT <- melt(as.matrix(CIBERSORT))
 mtx_melt <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
 colnames(mtx_melt)[4]<-"CIBERSORT"
@@ -97,21 +97,71 @@ merge_mtx<-merge_mtx[-c(79:84),]
 # Add text to the plot
 .labs <- rownames(merge_mtx)
 b <- ggscatter(merge_mtx, x = "scRNA", y = "CIBERSORT",
-   add = "reg.line", 
-   add.params = list(color = "blue", fill = "lightgray"),
-   conf.int = TRUE)
+  add = "reg.line", 
+#   add.params = list(color = "blue", fill = "lightgray"),
+  color = "Var1", 
+  palette=c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"),
+  conf.int = TRUE)
 
-png("01CRITERIA_dot_scRNA_CIBERSORT.png",width=800, height=600)
+png("mark05_test.png",width=800, height=600)
 b + xlim(0.001, 1)+ylim(0.001, 1)+
   geom_point(aes(color = Var1)) +
   geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
-  ggpubr::stat_cor(label.x = 0.003,method="spearman")+
+  stat_cor(label.x = 0.003,method="spearman")+
   geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
   scale_color_manual(values = c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"))+
   labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
 dev.off()
 
 #spearman correlation
-cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="pearson")
+cor(merge_mtx$scRNA, merge_mtx$CIBERSORT, method="pearson")
 cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="spearman")
 
+######################################################################
+#version 2 in the local
+######################################################################
+library(plotly)
+library(reshape2)
+library(ggpubr)
+library(ggrepel)
+main_dir = "/home/subin/Desktop/CSC"
+setwd(main_dir)
+
+file_dir = paste0(main_dir,"/15Mar19/")
+
+mtx <- read.table(file="DGIST_result_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
+mtx <- as.matrix(mtx)
+mtx_melt <- melt(mtx[,3:8])
+colnames(mtx_melt)[3] <- "scRNA"
+
+CIBERSORT <- read.delim("mark05_CIBERSORT.txt", header=T, stringsAsFactors=F, row.names=1)
+CIBERSORT <- melt(as.matrix(CIBERSORT))
+merge_mtx <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
+colnames(merge_mtx)[4]<-"CIBERSORT"
+
+#scRNA-CIBERSORT, scRNA-Xcell only scatter plot
+for(i in 1:nrow(merge_mtx)){
+  rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
+}
+# Add text to the plot
+.labs <- rownames(merge_mtx)
+b <- ggscatter(merge_mtx, x = "scRNA", y = "CIBERSORT",
+  add = "reg.line", 
+#   add.params = list(color = "blue", fill = "lightgray"),
+  color = "Var1", 
+  palette=c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"),
+  conf.int = TRUE)
+
+png(paste0(file_dir,"mark05_test.png"))
+b + xlim(0.001, 1)+ylim(0.001, 1)+
+  geom_point(aes(color = Var1)) +
+  geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
+  stat_cor(aes(color=Var1),label.x = 0.003,method="spearman")+
+  geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
+  scale_color_manual(values = c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"))+
+  labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
+dev.off()
+
+#spearman correlation
+cor(merge_mtx$scRNA, merge_mtx$CIBERSORT, method="pearson")
+cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="spearman")

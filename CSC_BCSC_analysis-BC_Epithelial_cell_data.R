@@ -141,9 +141,26 @@ for(i in levels(blood_cellTypes@active.ident)){
 	assign(paste0(i,"_DEG"), FindMarkers(blood_cellTypes, ident.1=i, ident.2=NULL, only.pos=TRUE))
 }
 
-
 for(i in levels(blood_cellTypes@active.ident)){
 	saveRDS(get(paste0(i,"_DEG")),paste0(i,"_DEG.rds"))
 }
 
 
+celltypes <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","ProMyelocyte")
+for(i in celltypes){
+  assign(paste0(i,"_DEG"), readRDS(paste0(i,"_DEG.rds")))
+}
+
+for(i in celltypes){
+  deg <- get(paste0(i,"_DEG"))
+  assign(paste0(i,"_DEG_cut"), deg[deg$p_val_adj<0.05,])
+  degList <- 
+  assign(paste0(i,"_DEG_cut_list"),rownames(get(paste0(i,"_DEG_cut"))))
+}
+
+union_DEG<-union(union(union(union(union(union(union(union(union(union(union(union(union(T_cell_DEG_cut_list,Monocyte_DEG_cut_list),Macrophage_DEG_cut_list),B_cell_DEG_cut_list),Dendritic_DEG_cut_list),NK_cell_DEG_cut_list),GMP_DEG_cut_list),CMP_DEG_cut_list),Neutrophil_DEG_cut_list),Haematopoietic_stem_cells_DEG_cut_list),Bone_marrow_cells_DEG_cut_list),Erythroblast_DEG_cut_list),Myelocyte_DEG_cut_list),ProMyelocyte_DEG_cut_list)
+
+for(i in celltypes){
+  deg <- get(paste0(i,"_DEG_cut_list"))
+  assign(paste0(i,"_only"), setdiff(deg,union_DEG))
+}
