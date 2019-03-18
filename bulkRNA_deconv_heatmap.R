@@ -124,17 +124,20 @@ library(plotly)
 library(reshape2)
 library(ggpubr)
 library(ggrepel)
+library(ggthemes)
+
 main_dir = "/home/subin/Desktop/CSC"
 setwd(main_dir)
 
-file_dir = paste0(main_dir,"/15Mar19/")
+file_dir = paste0(main_dir,"/18Mar19/")
+ver = "mark06"
 
 mtx <- read.table(file="DGIST_result_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
 mtx <- as.matrix(mtx)
 mtx_melt <- melt(mtx[,3:8])
 colnames(mtx_melt)[3] <- "scRNA"
 
-CIBERSORT <- read.delim("mark05_CIBERSORT.txt", header=T, stringsAsFactors=F, row.names=1)
+CIBERSORT <- read.delim(paste0(ver,"_CIBERSORT.txt"), header=T, stringsAsFactors=F, row.names=1)
 CIBERSORT <- melt(as.matrix(CIBERSORT))
 merge_mtx <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
 colnames(merge_mtx)[4]<-"CIBERSORT"
@@ -143,25 +146,52 @@ colnames(merge_mtx)[4]<-"CIBERSORT"
 for(i in 1:nrow(merge_mtx)){
   rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
 }
-# Add text to the plot
-.labs <- rownames(merge_mtx)
-b <- ggscatter(merge_mtx, x = "scRNA", y = "CIBERSORT",
-  add = "reg.line", 
-#   add.params = list(color = "blue", fill = "lightgray"),
-  color = "Var1", 
-  palette=c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"),
-  conf.int = TRUE)
 
-png(paste0(file_dir,"mark05_test.png"))
-b + xlim(0.001, 1)+ylim(0.001, 1)+
-  geom_point(aes(color = Var1)) +
-  geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+
-  stat_cor(aes(color=Var1),label.x = 0.003,method="spearman")+
+plot_m<-merge_mtx[merge_mtx$scRNA>0&merge_mtx$CIBERSORT>0,]
+b <- ggscatter(plot_m, x = "scRNA", y = "CIBERSORT",
+  add = "reg.line", 
+  #add.params = list(color = "blue", fill = "lightgray"),
+  color = "Var1" 
+  #  conf.int = TRUE #주변에 영역표시
+)
+# Add text to the plot
+.labs <- rownames(plot_m)
+color_pl <- c("B_cell"="#FF0000", "Bone_marrow_cells"="#FF5500","CMP"="#FFAA00","Dendritic"="#FFFF00","Erythroblast"="#AAFF00","GMP"="#00FF2B","Haematopoietic_stem_cells"="#00FFD4","Macrophage"="#00D4FF","Monocyte"="#00AAFF","Myelocyte"="#0055FF","Neutrophil"="#5500FF","NK_cell"="#AA00FF","Pro-Myelocyte"="#FF00AA","T_cell"="#FF0055")
+
+pdf(paste0(file_dir,ver,"_cor.pdf"),width=12,height=10)
+b +xlim(0, 1)+ylim(0, 1)+
+  geom_point(aes(color = Var1)) + 
+  theme_hc(style = "darkunica") + 
+  theme(legend.position="right") + 
+  #scale_colour_hc("darkunica") +
+  #geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+ #전체 cor line
   geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
-  scale_color_manual(values = c("#FF0000", "#FF5500","#FFAA00","#FFFF00","#AAFF00","#00FF2B","#00FFD4","#00D4FF","#00AAFF","#0055FF","#5500FF","#AA00FF","#FF00AA","#FF0055"))+
-  labs(title = "scRNA vs CIBERSORT\n", color = "cellTypes\n")
+  scale_color_manual(name="cellTypes",values = color_pl)+
+  labs(title = paste0("scRNA vs CIBERSORT\n",ver), color = "cellTypes\n")+
+  #total cor
+  annotate(geom="text", x=0.7, y=0.97, label=paste0("R=",round(cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="pearson"),2)), color="white",fontface=2)+
+  annotate(geom="text", x=0.7, y=0.93, label=paste0("B_cell : R= ",round(plot_cor["B_cell",],2)), color=color_pl[1])+
+  #annotate(geom="text", x=0.7, y=0.91, label=paste0("Bone_marrow_cells : R= ",round(plot_cor["Bone_marrow_cells",],2)), color=color_pl[2])+
+  #annotate(geom="text", x=0.7, y=0.89, label=paste0("CMP : R= ",round(plot_cor["CMP",],2)), color=color_pl[3])+
+  annotate(geom="text", x=0.7, y=0.87, label=paste0("Dendritic : R= ",round(plot_cor["Dendritic",],2)), color=color_pl[4])+
+  #annotate(geom="text", x=0.7, y=0.85, label=paste0("Erythroblast : R= ",round(plot_cor["Erythroblast",],2)), color=color_pl[5])+
+  annotate(geom="text", x=0.7, y=0.83, label=paste0("GMP : R= ",round(plot_cor["GMP",],2)), color=color_pl[6])+
+  annotate(geom="text", x=0.7, y=0.81, label=paste0("Haematopoietic_stem_cells : R= ",round(plot_cor["Haematopoietic_stem_cells",],2)), color=color_pl[7],fontface=2)+
+  annotate(geom="text", x=0.7, y=0.79, label=paste0("Macrophage : R= ",round(plot_cor["Macrophage",],2)), color=color_pl[8],fontface=2)+
+  annotate(geom="text", x=0.7, y=0.77, label=paste0("Monocyte : R= ",round(plot_cor["Monocyte",],2)), color=color_pl[9])+
+  #annotate(geom="text", x=0.7, y=0.75, label=paste0("Myelocyte : R= ",round(plot_cor["Myelocyte",],2)), color=color_pl[10])+
+  #annotate(geom="text", x=0.7, y=0.73, label=paste0("Neutrophil : R= ",round(plot_cor["Neutrophil",],2)), color=color_pl[11])+
+  annotate(geom="text", x=0.7, y=0.71, label=paste0("NK_cell : R= ",round(plot_cor["NK_cell",],2)), color=color_pl[12])+
+  #annotate(geom="text", x=0.7, y=0.69, label=paste0("Pro-Myelocyte : R= ",round(plot_cor["Pro-Myelocyte",],2)), color=color_pl[13])+
+  annotate(geom="text", x=0.7, y=0.67, label=paste0("T_cell : R= ",round(plot_cor["T_cell",],2)), color=color_pl[14],fontface=2)
 dev.off()
 
 #spearman correlation
-cor(merge_mtx$scRNA, merge_mtx$CIBERSORT, method="pearson")
+plot_cor <- as.data.frame(matrix(,nrow=14,ncol=1))
+rownames(plot_cor) <- unique(merge_mtx$Var1)
+colnames(plot_cor) <- "corr"
+for(CT in unique(merge_mtx$Var1)){
+  c<-cor(merge_mtx[merge_mtx$Var1==CT,"scRNA"], merge_mtx[merge_mtx$Var1==CT,"CIBERSORT"], method="pearson")
+  plot_cor[CT,1]<-c
+}
 cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="spearman")

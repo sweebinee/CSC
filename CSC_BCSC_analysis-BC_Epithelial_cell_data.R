@@ -61,7 +61,7 @@ Haematopoietic_stem_cells                Macrophage                  Monocyte
             Pro-Myelocyte                    T_cell 
                        12                     34579 
 
-HP_norm_non0 <- as.matrix(HP_norm[Matrix::rowSums(HP_norm)>0,])
+HP_raw_non0 <- as.matrix(HP_raw[Matrix::rowSums(HP_raw)>0,])
 
 #CIBERSORT_reference_sample_file
 #CIBERSORT_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_signature_gene_list.txt')$V1
@@ -69,12 +69,12 @@ HP_norm_non0 <- as.matrix(HP_norm[Matrix::rowSums(HP_norm)>0,])
 #S3_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S3_signature_gene_list.txt')$V1
 #sig_gene <- union(union(CIBERSORT_gene,S12_gene),S3_gene)
 
-HP_norm_non0_reduced <- HP_norm_non0[which(rownames(HP_norm_non0)%in%union_DEG),]
-> dim(HP_norm_non0_reduced)
+HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%union_DEG),]
+> dim(HP_raw_non0_reduced)
 [1]  2362 60749
 
 #make colnames celltype:BC_PE_XX
-HP_celltype_exp <- matrix(, nrow=nrow(HP_norm_non0_reduced), ncol=48)
+HP_celltype_exp <- matrix(, nrow=nrow(HP_raw_non0_reduced), ncol=112)
 sample=unique(HP_meta$sample_name)
 celltypes <- c("T_cell","Monocyte","Macrophage","B_cell","Dendritic","NK_cell","GMP","CMP","Neutrophil","Haematopoietic_stem_cells","Bone_marrow_cells","Erythroblast","Myelocyte","Pro-Myelocyte")
 coln <- c()
@@ -86,19 +86,33 @@ for(i in celltypes){
 }
 
 colnames(HP_celltype_exp) <- coln 
-rownames(HP_celltype_exp) <- rownames(HP_norm_non0_reduced)
+rownames(HP_celltype_exp) <- rownames(HP_raw_non0_reduced)
 
+#no_weighted
+for(i in celltypes){
+  for(j in sample){
+    cell <- rownames(HP_meta[HP_meta$cell_label_details==i&HP_meta$sample_name==j,])
+    for(z in rownames(HP_celltype_exp)){
+        avg_final <- mean(HP_raw_non0_reduced[z,which(colnames(HP_raw_non0_reduced)%in%cell)],na.rm = TRUE)
+      HP_celltype_exp[z,paste0(i,":",j)] <- avg_final
+      print(paste0(i,":",j))
+    }
+  }
+}
+
+
+#with weight
 for(i in celltypes){
 	for(j in sample){
 		cell <- rownames(HP_meta[HP_meta$cell_label_details==i&HP_meta$sample_name==j,])
 		for(z in rownames(HP_celltype_exp)){
       if(DEG_w[z,1]>1){
         w <- DEG_w[z,1]
-        avg <- mean(HP_norm_non0_reduced[z,which(colnames(HP_norm_non0_reduced)%in%cell)],na.rm = TRUE)
+        avg <- mean(HP_raw_non0_reduced[z,which(colnames(HP_raw_non0_reduced)%in%cell)],na.rm = TRUE)
         avg_final <- avg/w
         print(paste0(i,":",j,"_weighted"))
       }else{
-        avg_final <- mean(HP_norm_non0_reduced[z,which(colnames(HP_norm_non0_reduced)%in%cell)],na.rm = TRUE)
+        avg_final <- mean(HP_raw_non0_reduced[z,which(colnames(HP_raw_non0_reduced)%in%cell)],na.rm = TRUE)
         print(paste0(i,":",j))
       }
 			HP_celltype_exp[z,paste0(i,":",j)] <- avg_final
@@ -202,17 +216,18 @@ DEG_w
 
 ##for check
 #scRNA-seq exp sum table 
-sumTable <- matrix(,nrow=nrow(HP_norm_non0), ncol=8)
-rownames(sumTable) <- rownames(HP_norm_non0)
+sumTable <- matrix(,nrow=nrow(HP_raw_non0_reduced), ncol=8)
+rownames(sumTable) <- rownames(HP_raw_non0_reduced)
 colnames(sumTable) <- sample
 for(j in sample){
   cell <- rownames(HP_meta[HP_meta$sample_name==j,])
   for(i in rownames(sumTable)){
-    sumTable[i,j] <- sum(HP_norm_non0[i,colnames(HP_norm_non0)%in%cell]) 
+    sumTable[i,j] <- sum(HP_raw_non0[i,colnames(HP_raw_non0)%in%cell])
   }
+  print(j)
 }
 
-write.table(sumTable,'/storage2/Project/CSC/10X/DGIST_data02/scRNA_exp_sum.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+write.table(sumTable,'/storage2/Project/CSC/10X/DGIST_data02/scRNA_blood_exp_sum_3264.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
 
