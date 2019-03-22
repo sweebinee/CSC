@@ -28,11 +28,9 @@ for(i in clusters){
   assign(paste0("DEG_",i), readRDS(paste0("DEG_",i,".rds")))
 }
 
-markers.all=FindAllMarkers(blood)
-
 for(i in clusters){
   deg <- get(paste0("DEG_",i))
-  assign(paste0("DEG_cut_",i), deg[deg$p_val_adj<0.05&deg$avg_logFC>0.5,])
+  assign(paste0("DEG_cut_",i), deg[deg$p_val_adj<0.05,])
   assign(paste0("DEG_cut_list_",i),rownames(get(paste0("DEG_cut_",i))))
 }
 
@@ -74,4 +72,18 @@ for(i in clusters){
 
 write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_cluster_logFC1.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
+
+###
+#DGIST cluster - PEXX table
+cell_count<-matrix(,nrow=22,ncol=8)
+sample=unique(HP_meta$sample_name)
+colnames(cell_count)<-sample
+rownames(cell_count)<-clusters
+for(i in clusters){
+  for(j in sample){
+    cell <- length(rownames(HP_meta[HP_meta$clusters==i&HP_meta$sample_name==j,]))
+    cell_count[i,j]<-cell
+  }
+}
+write.table(cell_count,'/storage2/Project/CSC/10X/DGIST_data02/DGIST_cluster_sample_count.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 

@@ -195,3 +195,126 @@ for(CT in unique(merge_mtx$Var1)){
   plot_cor[CT,1]<-c
 }
 cor(merge_mtx$CIBERSORT, merge_mtx$scRNA, method="spearman")
+
+######################################################################
+#version 3 in the local : cluster ver.
+######################################################################
+library(plotly)
+library(reshape2)
+library(ggpubr)
+library(ggrepel)
+library(ggthemes)
+
+main_dir = "/home/subin/Desktop/CSC"
+setwd(main_dir)
+
+file_dir = paste0(main_dir,"/22Mar19/")
+ver = "cluster_mark01"
+
+mtx <- read.table(file="DGIST_cluster_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
+mtx <- as.matrix(mtx)
+mtx_melt <- melt(mtx[,3:8])
+colnames(mtx_melt)[3] <- "scRNA"
+
+CIBERSORT <- read.delim(paste0(ver,"_CIBERSORT.txt"), header=T, stringsAsFactors=F, row.names=1)
+CIBERSORT <- melt(as.matrix(CIBERSORT))
+merge_mtx <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
+colnames(merge_mtx)[4]<-"CIBERSORT"
+merge_mtx<-merge_mtx[order(merge_mtx[,"Var1"]),]
+
+merge_mtx$Var1 <- as.character(merge_mtx$Var1)
+
+#scRNA-CIBERSORT, scRNA-Xcell only scatter plot
+for(i in 1:nrow(merge_mtx)){
+  rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
+}
+
+plot_m<-merge_mtx[merge_mtx$scRNA>0&merge_mtx$CIBERSORT>0,]
+
+plot_m <- plot_m[plot_m$Var1%in%c("1","4","8","9","10","14","15","16","21"),]
+
+b <- ggscatter(plot_m, x = "scRNA", y = "CIBERSORT",
+  add = "reg.line", 
+  color = "Var1" )
+
+.labs <- rownames(plot_m)
+
+#spearman correlation
+plot_cor <- as.data.frame(matrix(,nrow=22,ncol=1))
+rownames(plot_cor) <- unique(merge_mtx$Var1)
+colnames(plot_cor) <- "corr"
+for(CT in unique(merge_mtx$Var1)){
+  c<-cor(merge_mtx[merge_mtx$Var1==CT,"scRNA"], merge_mtx[merge_mtx$Var1==CT,"CIBERSORT"], method="pearson")
+  plot_cor[CT,1]<-c
+}
+
+pdf(paste0(file_dir,ver,"_cor.pdf"),width=12,height=10)
+b +xlim(0, 1)+ylim(0, 1)+
+  geom_point(aes(color = Var1)) + 
+  theme_hc(style = "darkunica") + 
+  theme(legend.position="right") + 
+  #scale_colour_hc("darkunica") +
+  #geom_smooth(method='lm',se = FALSE, fullrange = TRUE)+ #전체 cor line
+  geom_text_repel(aes(label = .labs,  color = Var1), size = 3)+
+  labs(title = paste0("scRNA vs CIBERSORT\n",ver), color = "cellTypes\n")
+dev.off()
+
+##########################3
+#bar plot으로 그려보자
+library(ggplot2)
+library(scales)
+library(gridExtra)
+
+
+sample=c("PE24","PE25","PE26","PE29","PE32","PE36")
+cluster=unique(merge_mtx$Var1)
+per_mtx <- as.data.frame(matrix(, nrow=264, ncol=4))
+colnames(per_mtx) <- c("PE","CLUSTER","TOOL","PERCENTAGE")
+i = 1
+for(PE in sample){
+  for(CL in cluster){
+    for(tool in c("scRNA","CIBERSORT")){
+      per_mtx[i,"PE"] <- PE
+      per_mtx[i,"CLUSTER"] <- CL
+      per_mtx[i,"TOOL"] <- tool
+      rn <- paste0(CL,":",PE)
+      per_mtx[i,"PERCENTAGE"] <- merge_mtx[rn,tool]
+      i = i+1
+    }
+  }
+}
+
+fill <- c("#0073C2FF", "#EFC000FF")
+
+rects <- data.frame(xstart = factor(c(0,2,4,6,8,10,12,14,16,18,20)), 
+        xend = factor(c(1,3,5,7,9,11,13,15,17,19,21)))
+
+par(mfrow = c(6, 1))
+
+for(i in sample){
+  dt<-per_mtx[per_mtx$PE==i,]
+    ggplot(data=dt,aes(x=factor(as.numeric(dt$CLUSTER)), 
+      y=dt$PERCENTAGE, fill=factor(dt$TOOL)))+
+    coord_cartesian(ylim=c(0,1))+
+    labs(x="", y="") +
+    geom_bar(stat="identity", position = position_dodge(0.8),width = 0.7)+
+    #ggtitle(paste0(i,"\n Composition of clusters (%)")) +
+    #theme_minimal() +
+    scale_fill_manual(values=fill) +
+    guides(fill=FALSE)+
+    #theme(legend.position="bottom", legend.direction="horizontal",
+    #      legend.title = element_blank()) +
+    theme(axis.line = element_line(size=0.5, colour = "black"),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank()) +
+    theme(axis.text.x=element_text(colour="black", size = 10),
+        axis.text.y=element_text(colour="black", size = 10))
+}
+
+grid.arrange(plot_PE24,plot_PE25,plot_PE26,plot_PE29,plot_PE32,plot_PE36,ncol=1)
+
+pdf(paste0(file_dir,"cluster_percentage.pdf"))
+
+ggsave(paste0(file_dir,"cluster_percentage.pdf"),p)
+
+
