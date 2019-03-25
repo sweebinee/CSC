@@ -293,6 +293,7 @@ par(mfrow = c(6, 1))
 
 for(i in sample){
   dt<-per_mtx[per_mtx$PE==i,]
+  assign(paste0("plot_",i),
     ggplot(data=dt,aes(x=factor(as.numeric(dt$CLUSTER)), 
       y=dt$PERCENTAGE, fill=factor(dt$TOOL)))+
     coord_cartesian(ylim=c(0,1))+
@@ -309,6 +310,7 @@ for(i in sample){
         panel.border = element_blank(), panel.background = element_blank()) +
     theme(axis.text.x=element_text(colour="black", size = 10),
         axis.text.y=element_text(colour="black", size = 10))
+    )
 }
 
 grid.arrange(plot_PE24,plot_PE25,plot_PE26,plot_PE29,plot_PE32,plot_PE36,ncol=1)
