@@ -129,7 +129,7 @@ library(ggthemes)
 main_dir = "/home/subin/Desktop/CSC"
 setwd(main_dir)
 
-file_dir = paste0(main_dir,"/18Mar19/")
+file_dir = paste0(main_dir,"/25Mar19/")
 ver = "mark06"
 
 mtx <- read.table(file="DGIST_result_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
@@ -147,6 +147,20 @@ for(i in 1:nrow(merge_mtx)){
   rownames(merge_mtx)[i]<-paste0(merge_mtx$Var1[i],":",merge_mtx$Var2[i])
 }
 
+###################
+for(CT in unique(merge_mtx$Var1)){
+plot_m<-merge_mtx[merge_mtx$Var1==CT,]
+
+ggscatter(plot_m, color="black", x = "scRNA", y = "CIBERSORT",xlab=FALSE, ylab=FALSE,size=1,
+  ggtheme=theme_classic(base_size=10)) +
+  coord_fixed()+ #x, y axis 1:1
+  coord_cartesian(expand = FALSE,xlim=c(0,1),ylim=c(0,1))+ # 여백제거
+  geom_abline(intercept=0, slope=1, color="grey")+
+  annotate(geom="text", x=0.2, y=0.9, label=paste0("R=",round(cor(plot_m$CIBERSORT, plot_m$scRNA, method="pearson"),2)), color="black",fontface=2)
+ggsave(paste0(file_dir,"cluster_mark03.png"),width = 2, height = 2)
+}
+
+###################
 plot_m<-merge_mtx[merge_mtx$scRNA>0&merge_mtx$CIBERSORT>0,]
 b <- ggscatter(plot_m, x = "scRNA", y = "CIBERSORT",
   add = "reg.line", 
@@ -156,7 +170,10 @@ b <- ggscatter(plot_m, x = "scRNA", y = "CIBERSORT",
 )
 # Add text to the plot
 .labs <- rownames(plot_m)
-color_pl <- c("B_cell"="#FF0000", "Bone_marrow_cells"="#FF5500","CMP"="#FFAA00","Dendritic"="#FFFF00","Erythroblast"="#AAFF00","GMP"="#00FF2B","Haematopoietic_stem_cells"="#00FFD4","Macrophage"="#00D4FF","Monocyte"="#00AAFF","Myelocyte"="#0055FF","Neutrophil"="#5500FF","NK_cell"="#AA00FF","Pro-Myelocyte"="#FF00AA","T_cell"="#FF0055")
+color_pl <- c("B_cell"="#FF0000", "Bone_marrow_cells"="#FF5500","CMP"="#FFAA00","Dendritic"="#FFFF00",
+  "Erythroblast"="#AAFF00","GMP"="#00FF2B","Haematopoietic_stem_cells"="#00FFD4","Macrophage"="#00D4FF",
+  "Monocyte"="#00AAFF","Myelocyte"="#0055FF","Neutrophil"="#5500FF","NK_cell"="#AA00FF",
+  "Pro-Myelocyte"="#FF00AA","T_cell"="#FF0055")
 
 pdf(paste0(file_dir,ver,"_cor.pdf"),width=12,height=10)
 b +xlim(0, 1)+ylim(0, 1)+
@@ -208,8 +225,8 @@ library(ggthemes)
 main_dir = "/home/subin/Desktop/CSC"
 setwd(main_dir)
 
-file_dir = paste0(main_dir,"/22Mar19/")
-ver = "cluster_mark01"
+file_dir = paste0(main_dir,"/25Mar19/")
+ver = "cluster_mark03"
 
 mtx <- read.table(file="DGIST_cluster_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
 mtx <- as.matrix(mtx)
@@ -286,19 +303,15 @@ for(PE in sample){
 
 fill <- c("#0073C2FF", "#EFC000FF")
 
-rects <- data.frame(xstart = factor(c(0,2,4,6,8,10,12,14,16,18,20)), 
-        xend = factor(c(1,3,5,7,9,11,13,15,17,19,21)))
-
 par(mfrow = c(6, 1))
 
 for(i in sample){
   dt<-per_mtx[per_mtx$PE==i,]
-  assign(paste0("plot_",i),
     ggplot(data=dt,aes(x=factor(as.numeric(dt$CLUSTER)), 
       y=dt$PERCENTAGE, fill=factor(dt$TOOL)))+
     coord_cartesian(ylim=c(0,1))+
     labs(x="", y="") +
-    geom_bar(stat="identity", position = position_dodge(0.8),width = 0.7)+
+    geom_bar(stat="identity", position = position_dodge(),width = 0.7)+
     #ggtitle(paste0(i,"\n Composition of clusters (%)")) +
     #theme_minimal() +
     scale_fill_manual(values=fill) +
@@ -310,13 +323,6 @@ for(i in sample){
         panel.border = element_blank(), panel.background = element_blank()) +
     theme(axis.text.x=element_text(colour="black", size = 10),
         axis.text.y=element_text(colour="black", size = 10))
-    )
+  ggsave(paste0(file_dir,"cluster_mark03_plot_",i,".png"),width = 20, height = 5)
 }
-
-grid.arrange(plot_PE24,plot_PE25,plot_PE26,plot_PE29,plot_PE32,plot_PE36,ncol=1)
-
-pdf(paste0(file_dir,"cluster_percentage.pdf"))
-
-ggsave(paste0(file_dir,"cluster_percentage.pdf"),p)
-
 

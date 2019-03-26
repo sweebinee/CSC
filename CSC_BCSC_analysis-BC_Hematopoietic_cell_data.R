@@ -30,7 +30,7 @@ for(i in clusters){
 
 for(i in clusters){
   deg <- get(paste0("DEG_",i))
-  assign(paste0("DEG_cut_",i), deg[deg$p_val_adj<0.05,])
+  assign(paste0("DEG_cut_",i), deg[deg$p_val_adj<0.05&abs(deg$avg_logFC)>1,])
   assign(paste0("DEG_cut_list_",i),rownames(get(paste0("DEG_cut_",i))))
 }
 
@@ -70,7 +70,7 @@ for(i in clusters){
     }
 }
 
-write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_cluster_logFC1.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+write.table(HP_celltype_exp,'/storage2/Project/CSC/10X/DGIST_data02/ref_cluster.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
 ###
