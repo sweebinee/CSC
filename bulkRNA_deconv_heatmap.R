@@ -151,13 +151,13 @@ for(i in 1:nrow(merge_mtx)){
 for(CT in unique(merge_mtx$Var1)){
 plot_m<-merge_mtx[merge_mtx$Var1==CT,]
 
-ggscatter(plot_m, color="black", x = "scRNA", y = "CIBERSORT",xlab=FALSE, ylab=FALSE,size=1,
+ggscatter(plot_m, color="black", x = "scRNA", y = "sumSC",xlab=FALSE, ylab=FALSE,size=1,
   ggtheme=theme_classic(base_size=10)) +
   coord_fixed()+ #x, y axis 1:1
   coord_cartesian(expand = FALSE,xlim=c(0,1),ylim=c(0,1))+ # 여백제거
   geom_abline(intercept=0, slope=1, color="grey")+
-  annotate(geom="text", x=0.2, y=0.9, label=paste0("R=",round(cor(plot_m$CIBERSORT, plot_m$scRNA, method="pearson"),2)), color="black",fontface=2)
-ggsave(paste0(file_dir,"cluster_mark03.png"),width = 2, height = 2)
+  annotate(geom="text", x=0.2, y=0.9, label=paste0("R=",round(cor(plot_m$sumSC, plot_m$scRNA, method="pearson"),2)), color="black",fontface=2)
+ggsave(paste0(file_dir,"cluster_mark03_scRNA_sum.png"),width = 2, height = 2)
 }
 
 ###################
@@ -229,14 +229,19 @@ file_dir = paste0(main_dir,"/25Mar19/")
 ver = "cluster_mark03"
 
 mtx <- read.table(file="DGIST_cluster_percentage.txt",sep='\t',header=TRUE,stringsAsFactor=FALSE,row.names=1)
-mtx <- as.matrix(mtx)
-mtx_melt <- melt(mtx[,3:8])
+mtx_melt <- melt(as.matrix(mtx))
+#mtx_melt <- melt(mtx[,3:8])
 colnames(mtx_melt)[3] <- "scRNA"
+
+sumSC <- read.delim(paste0("scRNA_SUM_CIBERSORT.txt"), header=T, stringsAsFactors=F, row.names=1)
+sumSC <- melt(as.matrix(sumSC))
+merge_mtx <- merge(mtx_melt,sumSC,by=c('Var1','Var2'))
+colnames(merge_mtx)[4]<-"sumSC"
 
 CIBERSORT <- read.delim(paste0(ver,"_CIBERSORT.txt"), header=T, stringsAsFactors=F, row.names=1)
 CIBERSORT <- melt(as.matrix(CIBERSORT))
-merge_mtx <- merge(mtx_melt,CIBERSORT,by=c('Var1','Var2'))
-colnames(merge_mtx)[4]<-"CIBERSORT"
+merge_mtx <- merge(merge_mtx,CIBERSORT,by=c('Var1','Var2'),all.x=TRUE)
+colnames(merge_mtx)[5]<-"CIBERSORT"
 merge_mtx<-merge_mtx[order(merge_mtx[,"Var1"]),]
 
 merge_mtx$Var1 <- as.character(merge_mtx$Var1)
@@ -283,14 +288,14 @@ library(scales)
 library(gridExtra)
 
 
-sample=c("PE24","PE25","PE26","PE29","PE32","PE36")
+sample=c("PE23_1","PE23_2","PE24","PE25","PE26","PE29","PE32","PE36")
 cluster=unique(merge_mtx$Var1)
 per_mtx <- as.data.frame(matrix(, nrow=264, ncol=4))
 colnames(per_mtx) <- c("PE","CLUSTER","TOOL","PERCENTAGE")
 i = 1
 for(PE in sample){
   for(CL in cluster){
-    for(tool in c("scRNA","CIBERSORT")){
+    for(tool in c("scRNA","sumSC","CIBERSORT")){
       per_mtx[i,"PE"] <- PE
       per_mtx[i,"CLUSTER"] <- CL
       per_mtx[i,"TOOL"] <- tool
@@ -301,7 +306,7 @@ for(PE in sample){
   }
 }
 
-fill <- c("#0073C2FF", "#EFC000FF")
+fill <- c("#0073C2FF","#99CC00","#EFC000FF")
 
 par(mfrow = c(6, 1))
 
@@ -315,7 +320,7 @@ for(i in sample){
     #ggtitle(paste0(i,"\n Composition of clusters (%)")) +
     #theme_minimal() +
     scale_fill_manual(values=fill) +
-    guides(fill=FALSE)+
+    #guides(fill=FALSE)+
     #theme(legend.position="bottom", legend.direction="horizontal",
     #      legend.title = element_blank()) +
     theme(axis.line = element_line(size=0.5, colour = "black"),
@@ -326,3 +331,14 @@ for(i in sample){
   ggsave(paste0(file_dir,"cluster_mark03_plot_",i,".png"),width = 20, height = 5)
 }
 
+
+##
+#what is different bw bulk RNA-seq gene vs scRNA-seq clusters marker gene?
+bulk <- read.delim("/storage2/Project/CSC/RNA/03_Deconvolution/CSC_RNA_TPM_rm0_HUGO_rmdup.txt",sep='\t',header=TRUE,row.names=1,stringsAsFactors=FALSE)
+bulk_gene <- rownames(bulk)
+> length(bulk_gene)
+[1] 28221
+> length(union_DEG)
+[1] 1100
+> length(intersect(union_DEG,bulk_gene))
+[1] 1087
