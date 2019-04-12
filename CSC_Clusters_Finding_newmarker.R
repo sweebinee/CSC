@@ -120,3 +120,12 @@ g<-ggplot(df,aes(x=x, y=y, colour=expression)) +
 ggsave(paste0("B.cells.memory_",target,".png"),g)
 #dev.off()
 }
+
+##violin plot
+blood = readRDS(file="/storage2/Project/CSC/10X/DGIST_data02/BC_Hematopoietic_cell_data/BC_blood_seurat.rds")
+blood@meta.data$orig.ident <- as.factor(HP_meta$cell_label_details)
+
+png("Neutrophil_vln.png",width=1000,height=500)
+VlnPlot(blood,"ALPL")
+dev.off()
+
