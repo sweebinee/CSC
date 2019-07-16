@@ -206,6 +206,9 @@ library(ggrepel)
 library(ggthemes)
 
 main_dir = "/home/subin/Desktop/CSC"
+#MAC OS 
+#main_dir = "/Users/subin/Desktop/CSC"
+
 setwd(main_dir)
 
 file_dir = paste0(main_dir,"/22Mar19/")
