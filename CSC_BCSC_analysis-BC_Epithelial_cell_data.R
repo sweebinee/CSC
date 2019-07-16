@@ -64,10 +64,10 @@ Haematopoietic_stem_cells                Macrophage                  Monocyte
 HP_raw_non0 <- as.matrix(HP_raw[Matrix::rowSums(HP_raw)>0,])
 
 #CIBERSORT_reference_sample_file
-#CIBERSORT_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/CIBERSORT_signature_gene_list.txt')$V1
-#S12_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S12_signature_gene_list.txt')$V1
-#S3_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/S3_signature_gene_list.txt')$V1
-#sig_gene <- union(union(CIBERSORT_gene,S12_gene),S3_gene)
+CIBERSORT_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/test_cellType/CIBERSORT_signature_gene_list.txt')$V1
+S12_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/test_cellType/S12_signature_gene_list.txt')$V1
+S3_gene <- read.table('/storage2/Project/CSC/10X/DGIST_data02/test_cellType/S3_signature_gene_list.txt')$V1
+sig_gene <- union(union(CIBERSORT_gene,S12_gene),S3_gene)
 
 HP_raw_non0_reduced <- HP_raw_non0[which(rownames(HP_raw_non0)%in%union_DEG),]
 > dim(HP_raw_non0_reduced)
@@ -227,7 +227,7 @@ for(j in sample){
   print(j)
 }
 
-write.table(sumTable,'/storage2/Project/CSC/10X/DGIST_data02/scRNA_blood_exp_sum_3264.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
+write.table(sumTable,'/storage2/Project/CSC/10X/DGIST_data02/scRNA_blood_exp_sum_1100.txt',sep = "\t", row.names=TRUE, col.names=TRUE)
 
 
 
